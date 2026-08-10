@@ -41,12 +41,14 @@ export function LibraryToolbar({
   onViewModeChange,
 }: LibraryToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-canvas-line px-8 py-3 text-sm">
+    <div className="flex flex-wrap items-center gap-2 border-b border-canvas-line px-4 py-3 text-sm sm:gap-3 sm:px-8">
+      {/* Full width below sm so search gets its own row and the filters wrap
+       * underneath it, rather than everything fighting over 360px. */}
       <input
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search your library…"
-        className="min-w-[10rem] flex-1 rounded border border-canvas-line bg-canvas px-3 py-1.5 outline-none focus:border-indigo"
+        className="w-full rounded border border-canvas-line bg-canvas px-3 py-2 outline-none focus:border-indigo sm:w-auto sm:min-w-[10rem] sm:flex-1 sm:py-1.5"
       />
 
       <div className="flex gap-1 rounded-full border border-canvas-line p-0.5">
@@ -56,7 +58,7 @@ export function LibraryToolbar({
             type="button"
             onClick={() => onKindChange(k)}
             aria-pressed={kind === k}
-            className={`rounded-full px-3 py-1 text-xs ${
+            className={`rounded-full px-3 py-1.5 text-xs sm:py-1 ${
               kind === k ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
             }`}
           >
@@ -68,7 +70,7 @@ export function LibraryToolbar({
       <select
         value={status ?? ''}
         onChange={(e) => onStatusChange((e.target.value || null) as PoemStatus | null)}
-        className="rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70"
+        className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
       >
         <option value="">Any status</option>
         {POEM_STATUSES.map((s) => (
@@ -82,7 +84,7 @@ export function LibraryToolbar({
         <select
           value={tag ?? ''}
           onChange={(e) => onTagChange(e.target.value || null)}
-          className="rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70"
+          className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
         >
           <option value="">Any tag</option>
           {tags.map((t) => (
@@ -97,7 +99,7 @@ export function LibraryToolbar({
         <select
           value={collectionId ?? ''}
           onChange={(e) => onCollectionChange(e.target.value || null)}
-          className="rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70"
+          className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
         >
           <option value="">Any collection</option>
           {collections.map((c) => (
@@ -122,7 +124,7 @@ export function LibraryToolbar({
           type="button"
           onClick={() => onViewModeChange('list')}
           aria-pressed={viewMode === 'list'}
-          className={`rounded-full px-3 py-1 text-xs ${viewMode === 'list' ? 'bg-indigo text-paper' : 'text-ink/50'}`}
+          className={`rounded-full px-3 py-1.5 text-xs sm:py-1 ${viewMode === 'list' ? 'bg-indigo text-paper' : 'text-ink/50'}`}
         >
           List
         </button>
@@ -130,7 +132,7 @@ export function LibraryToolbar({
           type="button"
           onClick={() => onViewModeChange('grid')}
           aria-pressed={viewMode === 'grid'}
-          className={`rounded-full px-3 py-1 text-xs ${viewMode === 'grid' ? 'bg-indigo text-paper' : 'text-ink/50'}`}
+          className={`rounded-full px-3 py-1.5 text-xs sm:py-1 ${viewMode === 'grid' ? 'bg-indigo text-paper' : 'text-ink/50'}`}
         >
           Grid
         </button>

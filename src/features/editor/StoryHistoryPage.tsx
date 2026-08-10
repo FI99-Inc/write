@@ -62,15 +62,15 @@ export function StoryHistoryPage() {
 
   return (
     <div className="min-h-full bg-canvas">
-      <header className="flex items-center justify-between border-b border-canvas-line px-8 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-canvas-line px-4 py-3 sm:px-8 sm:py-4">
         <Link to={`/story/${id}`} className="text-sm text-ink/50 transition-colors hover:text-indigo">
           ← Back to story
         </Link>
-        <h1 className="font-display text-lg text-ink">{story.title || 'Untitled'} — History</h1>
-        <span className="w-24" />
+        <h1 className="min-w-0 truncate font-display text-base text-ink sm:text-lg">{story.title || 'Untitled'} — History</h1>
+        <span className="hidden sm:block sm:w-24" />
       </header>
 
-      <main className="mx-auto max-w-3xl px-8 py-10">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-8 sm:py-10">
         {snapshots.length === 0 ? (
           <p className="text-sm text-ink/50">
             No snapshots yet. Use the &ldquo;Snapshot&rdquo; button in the editor to save a checkpoint you can
@@ -81,10 +81,10 @@ export function StoryHistoryPage() {
             {versions
               .filter((v) => v.id !== CURRENT)
               .map((version) => (
-                <li key={version.id} className="flex items-center justify-between gap-4 px-6 py-3">
+                <li key={version.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
                   <span className="text-sm text-ink/70">{version.label}</span>
                   {pendingRestoreId === version.id ? (
-                    <div className="flex shrink-0 items-center gap-3 text-sm">
+                    <div className="flex shrink-0 flex-wrap items-center gap-3 text-sm">
                       <span className="text-ink/50">Restore this version?</span>
                       <button
                         type="button"

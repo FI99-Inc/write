@@ -20,8 +20,9 @@ import { WorkbenchSidebar } from '@/features/editor/workbench/WorkbenchSidebar'
 import { SettingsPanel } from '@/features/settings/SettingsPanel'
 import { ExportMenu } from '@/features/editor/ExportMenu'
 import { PrintablePoem } from '@/features/editor/PrintablePoem'
-import { useEditorMetrics } from '@/features/editor/editorLayout'
+import { useEditorMetrics, toolbarPill } from '@/features/editor/editorLayout'
 import { useRegisterCommands, type Command } from '@/engines/CommandPaletteContext'
+import { isDesktopViewport } from '@/engines/viewport'
 
 type OverlayMode = 'none' | 'rhymes' | 'scansion'
 
@@ -48,7 +49,9 @@ export function EditorPage() {
   const backdropRef = useRef<HTMLDivElement>(null)
 
   const [focusMode, setFocusMode] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(true)
+  // On a phone the workbench is a sheet over the poem, so it starts closed —
+  // opening straight into it would bury the thing you came here to write.
+  const [panelOpen, setPanelOpen] = useState(isDesktopViewport)
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('none')
   const [currentLine, setCurrentLine] = useState(0)
   const [overlayWindow, setOverlayWindow] = useState({ top: 0, bottom: 0 })
@@ -284,19 +287,32 @@ export function EditorPage() {
   return (
     <>
     <div className="flex h-full flex-col bg-canvas print:hidden">
-      <header className="flex items-center justify-between border-b border-canvas-line px-8 py-4">
+      <header className="flex items-center gap-2 border-b border-canvas-line px-3 py-2 sm:gap-5 sm:px-8 sm:py-4">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="text-sm text-ink/50 transition-colors hover:text-indigo"
+          className="shrink-0 text-sm text-ink/50 transition-colors hover:text-indigo"
         >
-          ← Library
+          <span aria-hidden="true">←</span>
+          <span className="ml-1 hidden sm:inline">Library</span>
+          <span className="sr-only sm:hidden">Library</span>
         </button>
-        <div className="flex items-center gap-5 text-xs text-ink/40">
-          <span>{wordCount} words</span>
-          <span>{lineCount} lines</span>
-          <span>{stanzaCount} stanzas</span>
-          <span className="mx-1 h-3 w-px bg-canvas-line" />
+
+        {/* Below sm this strip scrolls sideways rather than wrapping, so the
+         * header stays one row tall and the poem keeps the screen. Export and
+         * Settings sit outside it — their popovers are absolutely positioned
+         * and would be clipped by the scroll container. */}
+        <div className="scroll-strip flex min-w-0 flex-1 items-center gap-2 overflow-x-auto text-xs text-ink/40 sm:justify-end sm:gap-5 sm:overflow-x-visible">
+          <span className="hidden shrink-0 sm:inline">
+            {wordCount} word{wordCount === 1 ? '' : 's'}
+          </span>
+          <span className="hidden shrink-0 sm:inline">
+            {lineCount} line{lineCount === 1 ? '' : 's'}
+          </span>
+          <span className="hidden shrink-0 sm:inline">
+            {stanzaCount} stanza{stanzaCount === 1 ? '' : 's'}
+          </span>
+          <span className="mx-1 hidden h-3 w-px shrink-0 bg-canvas-line sm:block" />
           {overlayMode === 'scansion' && (
             <TargetMeterSelector value={poem.targetMeter ?? null} onChange={handleTargetMeterChange} />
           )}
@@ -304,9 +320,7 @@ export function EditorPage() {
             type="button"
             onClick={() => setOverlayMode((m) => (m === 'rhymes' ? 'none' : 'rhymes'))}
             aria-pressed={overlayMode === 'rhymes'}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              overlayMode === 'rhymes' ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-            }`}
+            className={toolbarPill(overlayMode === 'rhymes')}
           >
             Rhyme colors
           </button>
@@ -314,9 +328,7 @@ export function EditorPage() {
             type="button"
             onClick={() => setOverlayMode((m) => (m === 'scansion' ? 'none' : 'scansion'))}
             aria-pressed={overlayMode === 'scansion'}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              overlayMode === 'scansion' ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-            }`}
+            className={toolbarPill(overlayMode === 'scansion')}
           >
             Scansion
           </button>
@@ -324,9 +336,7 @@ export function EditorPage() {
             type="button"
             onClick={() => setFocusMode((v) => !v)}
             aria-pressed={focusMode}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              focusMode ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-            }`}
+            className={toolbarPill(focusMode)}
           >
             Focus
           </button>
@@ -334,35 +344,53 @@ export function EditorPage() {
             type="button"
             onClick={() => setPanelOpen((v) => !v)}
             aria-pressed={panelOpen}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              panelOpen ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-            }`}
+            className={toolbarPill(panelOpen)}
           >
             Panel
           </button>
-          <button type="button" onClick={handleSnapshot} className="text-ink/50 hover:text-indigo">
+          <button
+            type="button"
+            onClick={handleSnapshot}
+            className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
+          >
             {snapshotSaved ? 'Saved ✓' : 'Snapshot'}
           </button>
-          <Link to={`/poem/${id}/history`} className="text-ink/50 hover:text-indigo">
+          <Link
+            to={`/poem/${id}/history`}
+            className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
+          >
             History
           </Link>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3 text-xs text-ink/40 sm:gap-5">
           <ExportMenu title={title} body={body} />
           <SettingsPanel />
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <main className="min-h-0 flex-1 overflow-y-auto px-8 py-10">
-          <div className="mx-auto max-w-3xl">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
+          {/* A column so the writing surface can take whatever height is left
+           * over rather than stopping at its 55dvh floor with dead canvas
+           * underneath — which on a phone is most of the screen. */}
+          <div className="mx-auto flex h-full max-w-3xl flex-col">
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Untitled"
               aria-label="Poem title"
-              className="w-full bg-transparent font-display text-3xl text-ink outline-none placeholder:text-ink/30"
+              className="w-full bg-transparent font-display text-2xl text-ink outline-none placeholder:text-ink/30 sm:text-3xl"
             />
 
-            <div className="mt-8 flex min-h-[55vh]">
+            {/* The counts live in the header on wider screens; on a phone
+             * they'd crowd out the toggles, so they read out here instead. */}
+            <p className="mt-1 text-xs text-ink/40 sm:hidden">
+              {wordCount} word{wordCount === 1 ? '' : 's'} · {lineCount} line{lineCount === 1 ? '' : 's'} ·{' '}
+              {stanzaCount} stanza{stanzaCount === 1 ? '' : 's'}
+            </p>
+
+            <div className="mt-6 flex min-h-[55dvh] flex-1 sm:mt-8">
               <SyllableGutter lines={lines} counts={syllableCounts} loading={dictLoading} gutterRef={gutterRef} />
               <div className="relative min-w-0 flex-1">
                 {focusMode && <FocusOverlay topHeight={overlayWindow.top} bottomHeight={overlayWindow.bottom} />}
@@ -391,7 +419,7 @@ export function EditorPage() {
                   placeholder="Begin…"
                   aria-label="Poem text"
                   spellCheck={false}
-                  className="h-full min-h-[55vh] w-full resize-none overflow-auto whitespace-pre bg-transparent pl-6 outline-none placeholder:text-ink/30"
+                  className="h-full min-h-[55dvh] w-full resize-none overflow-auto whitespace-pre bg-transparent pl-3 outline-none placeholder:text-ink/30 sm:pl-6"
                   style={{
                     fontSize,
                     lineHeight: `${lineHeight}px`,
@@ -424,6 +452,7 @@ export function EditorPage() {
           onAcrosticWordChange={handleAcrosticWordChange}
           onInsert={insertAtCursor}
           hidden={!panelOpen}
+          onClose={() => setPanelOpen(false)}
         />
       </div>
 

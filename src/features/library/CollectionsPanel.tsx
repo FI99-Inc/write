@@ -19,7 +19,7 @@ export function CollectionsPanel({ collections }: CollectionsPanelProps) {
   }
 
   return (
-    <div className="border-b border-canvas-line px-8 py-3 text-sm">
+    <div className="border-b border-canvas-line px-4 py-3 text-sm sm:px-8">
       <button type="button" onClick={() => setOpen((v) => !v)} className="text-ink/50 hover:text-indigo">
         {open ? '▾' : '▸'} Collections ({collections.length})
       </button>
@@ -32,12 +32,12 @@ export function CollectionsPanel({ collections }: CollectionsPanelProps) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               placeholder="New collection name"
-              className="w-56 rounded border border-canvas-line bg-canvas px-2 py-1 outline-none focus:border-indigo"
+              className="min-w-0 flex-1 rounded border border-canvas-line bg-canvas px-2 py-1.5 outline-none focus:border-indigo sm:w-56 sm:flex-none sm:py-1"
             />
             <button
               type="button"
               onClick={handleCreate}
-              className="rounded-full bg-indigo px-3 py-1 text-xs font-medium text-paper hover:bg-indigo-soft"
+              className="shrink-0 rounded-full bg-indigo px-4 py-1.5 text-xs font-medium text-paper hover:bg-indigo-soft sm:px-3 sm:py-1"
             >
               Create
             </button>

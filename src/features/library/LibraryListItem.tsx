@@ -62,9 +62,15 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
 
   return (
     <div
-      className={`flex gap-3 px-5 py-4 ${viewMode === 'grid' ? 'flex-col rounded-lg border border-canvas-line bg-paper' : 'items-center'}`}
+      className={`flex gap-3 px-4 py-4 sm:px-5 ${
+        viewMode === 'grid'
+          ? 'flex-col rounded-lg border border-canvas-line bg-paper'
+          : // Below sm the title and the metadata row stack; side by side
+            // they'd leave the title a dozen characters wide.
+            'flex-col sm:flex-row sm:items-center'
+      }`}
     >
-      <div className={`flex items-center gap-3 ${viewMode === 'grid' ? '' : 'min-w-0 flex-1'}`}>
+      <div className={`flex items-center gap-3 ${viewMode === 'grid' ? '' : 'min-w-0 sm:flex-1'}`}>
         <button
           type="button"
           onClick={toggleFavorite}
@@ -85,7 +91,7 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
         </button>
       </div>
 
-      <div className={`flex flex-wrap items-center gap-2 text-xs ${viewMode === 'grid' ? '' : 'shrink-0'}`}>
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-xs ${viewMode === 'grid' ? '' : 'sm:shrink-0'}`}>
         <span className="rounded-full border border-canvas-line px-2 py-0.5 capitalize text-ink/50">
           {doc.kind}
         </span>

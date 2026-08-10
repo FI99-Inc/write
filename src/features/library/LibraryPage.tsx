@@ -63,25 +63,31 @@ export function LibraryPage() {
 
   return (
     <div className="min-h-full bg-canvas">
-      <header className="flex items-center justify-between border-b border-canvas-line px-8 py-6">
-        <h1 className="font-display text-2xl tracking-tight text-ink">Poem Editor</h1>
-        <div className="flex items-center gap-5">
-          <Link to="/stats" className="text-sm text-ink/50 hover:text-indigo">
-            Stats
-          </Link>
-          <ImportExportPanel />
-          <SettingsPanel />
+      <header className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-canvas-line px-4 py-4 sm:px-8 sm:py-6">
+        {/* The exclamation stands in for the I — the mark of emphasis sitting
+         * inside the word itself. Tracked out so it reads as a masthead. */}
+        <h1 className="mr-auto font-display text-xl tracking-[0.2em] text-ink sm:text-2xl">
+          WR<span className="text-indigo">!</span>TE
+        </h1>
+        <Link to="/stats" className="text-sm text-ink/50 hover:text-indigo">
+          Stats
+        </Link>
+        <ImportExportPanel />
+        <SettingsPanel />
+        {/* `w-full` drops the pair onto its own full-width row below sm,
+         * where they'd otherwise be squeezed to a couple of characters. */}
+        <div className="flex w-full gap-2 sm:w-auto sm:gap-5">
           <button
             type="button"
             onClick={handleNewStory}
-            className="rounded-full border border-canvas-line px-5 py-2 text-sm font-medium text-ink/70 transition-colors hover:border-indigo hover:text-indigo"
+            className="flex-1 rounded-full border border-canvas-line px-5 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:border-indigo hover:text-indigo sm:flex-none sm:py-2"
           >
             New story
           </button>
           <button
             type="button"
             onClick={handleNewPoem}
-            className="rounded-full bg-indigo px-5 py-2 text-sm font-medium text-paper transition-colors hover:bg-indigo-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo"
+            className="flex-1 rounded-full bg-indigo px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-indigo-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo sm:flex-none sm:py-2"
           >
             New poem
           </button>
@@ -109,27 +115,27 @@ export function LibraryPage() {
         onViewModeChange={setViewMode}
       />
 
-      <main className="mx-auto max-w-4xl px-8 py-10">
+      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
         {docs === undefined ? (
           <p className="text-sm text-ink/50">Loading your library…</p>
         ) : docs.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-canvas-line px-6 py-16 text-center">
+          <div className="rounded-lg border border-dashed border-canvas-line px-5 py-12 text-center sm:px-6 sm:py-16">
             <p className="font-display text-lg text-ink/70">An empty shelf.</p>
             <p className="mt-2 text-sm text-ink/50">
               Start your first poem or story — it&rsquo;s waiting to be written.
             </p>
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={handleNewStory}
-                className="rounded-full border border-canvas-line px-5 py-2 text-sm font-medium text-ink/70 transition-colors hover:border-indigo hover:text-indigo"
+                className="rounded-full border border-canvas-line px-5 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:border-indigo hover:text-indigo sm:py-2"
               >
                 New story
               </button>
               <button
                 type="button"
                 onClick={handleNewPoem}
-                className="rounded-full bg-indigo px-5 py-2 text-sm font-medium text-paper transition-colors hover:bg-indigo-soft"
+                className="rounded-full bg-indigo px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-indigo-soft sm:py-2"
               >
                 New poem
               </button>

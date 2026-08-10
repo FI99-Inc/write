@@ -18,6 +18,8 @@ import { RichStoryEditor, type RichStoryHandle } from '@/features/editor/story/R
 import { RichToolbar } from '@/features/editor/story/RichToolbar'
 import { storyFormat, type StoryComment } from '@/types/story'
 import { docToPlainText, EMPTY_DOC } from '@/engines/richText/projection'
+import { toolbarPill } from '@/features/editor/editorLayout'
+import { isDesktopViewport } from '@/engines/viewport'
 
 /** The "short story mode" editor — a plain wrapping prose surface (no
  * per-line gutters/overlays, since rhyme/scansion/meter don't apply to
@@ -47,7 +49,9 @@ export function StoryEditorPage() {
   const format = story ? storyFormat(story) : 'plain'
 
   const [focusMode, setFocusMode] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(true)
+  // On a phone the workbench is a sheet over the story, so it starts closed —
+  // opening straight into it would bury the thing you came here to write.
+  const [panelOpen, setPanelOpen] = useState(isDesktopViewport)
   const [snapshotSaved, setSnapshotSaved] = useState(false)
   const [activeWord, setActiveWord] = useState<string | null>(null)
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
@@ -209,26 +213,34 @@ export function StoryEditorPage() {
   return (
     <>
       <div className="flex h-full flex-col bg-canvas print:hidden">
-        <header className="flex items-center justify-between border-b border-canvas-line px-8 py-4">
+        <header className="flex items-center gap-2 border-b border-canvas-line px-3 py-2 sm:gap-5 sm:px-8 sm:py-4">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="text-sm text-ink/50 transition-colors hover:text-indigo"
+            className="shrink-0 text-sm text-ink/50 transition-colors hover:text-indigo"
           >
-            ← Library
+            <span aria-hidden="true">←</span>
+            <span className="ml-1 hidden sm:inline">Library</span>
+            <span className="sr-only sm:hidden">Library</span>
           </button>
-          <div className="flex items-center gap-5 text-xs text-ink/40">
-            <span>{wordCount.toLocaleString()} words</span>
-            <span>{paragraphCount} paragraphs</span>
-            <span>~{readingMinutes} min read</span>
-            <span className="mx-1 h-3 w-px bg-canvas-line" />
+
+          {/* Scrolls sideways on a phone so the header stays one row tall.
+           * Export and Settings sit outside it — their popovers would be
+           * clipped by the scroll container. */}
+          <div className="scroll-strip flex min-w-0 flex-1 items-center gap-2 overflow-x-auto text-xs text-ink/40 sm:justify-end sm:gap-5 sm:overflow-x-visible">
+            <span className="hidden shrink-0 sm:inline">
+              {wordCount.toLocaleString()} word{wordCount === 1 ? '' : 's'}
+            </span>
+            <span className="hidden shrink-0 sm:inline">
+              {paragraphCount} paragraph{paragraphCount === 1 ? '' : 's'}
+            </span>
+            <span className="hidden shrink-0 sm:inline">~{readingMinutes} min read</span>
+            <span className="mx-1 hidden h-3 w-px shrink-0 bg-canvas-line sm:block" />
             <button
               type="button"
               onClick={() => setFocusMode((v) => !v)}
               aria-pressed={focusMode}
-              className={`rounded-full px-3 py-1 transition-colors ${
-                focusMode ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-              }`}
+              className={toolbarPill(focusMode)}
             >
               Focus
             </button>
@@ -236,18 +248,26 @@ export function StoryEditorPage() {
               type="button"
               onClick={() => setPanelOpen((v) => !v)}
               aria-pressed={panelOpen}
-              className={`rounded-full px-3 py-1 transition-colors ${
-                panelOpen ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
-              }`}
+              className={toolbarPill(panelOpen)}
             >
               Panel
             </button>
-            <button type="button" onClick={handleSnapshot} className="text-ink/50 hover:text-indigo">
+            <button
+              type="button"
+              onClick={handleSnapshot}
+              className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
+            >
               {snapshotSaved ? 'Saved ✓' : 'Snapshot'}
             </button>
-            <Link to={`/story/${id}/history`} className="text-ink/50 hover:text-indigo">
+            <Link
+              to={`/story/${id}/history`}
+              className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
+            >
               History
             </Link>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-3 text-xs text-ink/40 sm:gap-5">
             <ExportMenu
               title={title}
               body={displayBody}
@@ -260,15 +280,22 @@ export function StoryEditorPage() {
         {format === 'rich' && <RichToolbar editor={richEditor} onAddComment={handleAddComment} />}
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          <main className="min-h-0 flex-1 overflow-y-auto px-8 py-10">
+          <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
             <div className={focusMode ? 'mx-auto max-w-2xl' : 'mx-auto max-w-3xl'}>
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="Untitled"
                 aria-label="Story title"
-                className="w-full bg-transparent font-display text-3xl text-ink outline-none placeholder:text-ink/30"
+                className="w-full bg-transparent font-display text-2xl text-ink outline-none placeholder:text-ink/30 sm:text-3xl"
               />
+
+              {/* The counts live in the header on wider screens; on a phone
+               * they'd crowd out the toggles, so they read out here instead. */}
+              <p className="mt-1 text-xs text-ink/40 sm:hidden">
+                {wordCount.toLocaleString()} word{wordCount === 1 ? '' : 's'} · {paragraphCount} paragraph
+                {paragraphCount === 1 ? '' : 's'} · ~{readingMinutes} min read
+              </p>
 
               {format === 'rich' ? (
                 <RichStoryEditor
@@ -301,6 +328,7 @@ export function StoryEditorPage() {
             body={displayBody}
             onInsert={(word) => (format === 'rich' ? richRef.current : surfaceRef.current)?.insertText(word)}
             hidden={focusMode || !panelOpen}
+            onClose={() => setPanelOpen(false)}
             commentsProps={
               format === 'rich'
                 ? {

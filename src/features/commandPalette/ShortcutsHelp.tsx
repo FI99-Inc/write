@@ -15,14 +15,14 @@ export function ShortcutsHelp() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4"
       onClick={() => setShortcutsOpen(false)}
     >
       <div
         role="dialog"
         aria-label="Keyboard shortcuts"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-canvas-line bg-paper p-6 shadow-xl"
+        className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-lg border border-canvas-line bg-paper p-5 shadow-xl sm:p-6"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg text-ink">Keyboard shortcuts</h2>

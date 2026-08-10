@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# WR!TE
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A local-first editor for poems and short stories, with the craft tools built in:
+live syllable counts, scansion against a target meter, rhyme-scheme detection,
+form templates, and version snapshots.
 
-Currently, two official plugins are available:
+**[write.fi99.ca](https://write.fi99.ca)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Everything lives in your browser. Your work is stored in IndexedDB, the CMU
+pronouncing dictionary and Moby Thesaurus ship with the app, and nothing is sent
+anywhere — the whole thing works offline. Two optional features reach the
+network only after you switch them on: Datamuse lookups for extra rhymes and
+synonyms, and an "Ask AI" tab that talks to an Ollama instance you run yourself.
 
-## React Compiler
+## What's in it
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Poem editor** — a syllable gutter and rhyme-scheme column that stay in step
+with the text, a rhyme-color overlay, a clickable scansion overlay you can
+correct syllable by syllable, focus mode, and form checking against templates
+(sonnet, villanelle, sestina, haiku, acrostic, and others) or your own custom
+form.
 
-## Expanding the Oxlint configuration
+**Story editor** — a rich-text surface with formatting, headings, lists, and
+anchored comment threads, or a plain-text one if you prefer. Word count,
+paragraph count, and reading time.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**Workbench** — rhymes, thesaurus, syllables and stress, sound tools
+(alliteration, assonance, consonance), meter analysis, prompts, and recent
+lookups, in a panel beside the writing surface.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+**Library** — search, tags, status, collections, favorites, JSON import/export,
+a writing-streak heatmap, and per-document version history with diffs.
+
+## Development
+
+```sh
+npm install
+npm run dev      # vite dev server
+npm test         # vitest
+npm run lint     # oxlint
+npm run build    # tsc -b && vite build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The bundled dictionary and thesaurus in `public/data/` are generated from the
+raw sources in `scripts/raw/` by `node scripts/build-dictionary.mjs`.
+
+Pushing to `master` deploys to GitHub Pages via `.github/workflows/deploy.yml`.

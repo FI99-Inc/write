@@ -15,7 +15,7 @@ export function SyllableGutter({ lines, counts, loading, gutterRef }: SyllableGu
     <div
       ref={gutterRef}
       aria-hidden="true"
-      className="w-10 shrink-0 overflow-hidden select-none border-r border-canvas-line pr-3 text-right text-ink/35"
+      className="w-7 shrink-0 overflow-hidden select-none border-r border-canvas-line pr-2 text-right text-ink/35 sm:w-10 sm:pr-3"
       style={{ fontSize, paddingTop: topPadding }}
     >
       {lines.map((_line, index) => (

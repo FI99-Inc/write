@@ -64,10 +64,51 @@
   }
 }
 
+html {
+  /* Stop iOS inflating text when a phone is rotated to landscape — the
+     editor's line metrics are computed in px and can't absorb it. */
+  -webkit-text-size-adjust: 100%;
+}
+
 html,
 body,
 #root {
   height: 100%;
+}
+
+/* The editor is an app shell: a fixed header over an internally-scrolling
+   writing surface. A percentage height resolves against the *large* viewport
+   on mobile, so the bottom of the shell hides behind the browser chrome —
+   dvh tracks what's actually visible instead. */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
+/* Sideways-scrolling control strips (editor toolbar, rich-text toolbar) keep
+   the header one row tall on a phone. Touch platforms already draw overlay
+   scrollbars, so the visible track is pure noise here. */
+.scroll-strip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safari zooms the page whenever a focused control's text is under 16px.
+   The app's chrome is deliberately dense (text-xs/text-sm), so without this
+   every tap into a search box or select would jolt the layout. Ends at the
+   `sm` breakpoint, where the dense sizing is what's wanted again. */
+@media (max-width: 639px) {
+  input:not([type='range']):not([type='checkbox']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Rich story editor (TipTap). Tailwind's reset strips list/heading styling,

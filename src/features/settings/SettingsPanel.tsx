@@ -45,7 +45,9 @@ export function SettingsPanel() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-10 cursor-default"
           />
-          <div className="absolute right-0 z-20 mt-2 w-72 space-y-4 rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg">
+          {/* Capped and scrollable: the full panel is taller than a phone in
+           * landscape, and it's anchored to a header that doesn't scroll. */}
+          <div className="absolute right-0 z-20 mt-2 max-h-[75dvh] w-72 space-y-4 overflow-y-auto rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg">
             <div>
               <p className="mb-1.5 text-xs font-medium text-ink/40">Theme</p>
               <div className="flex gap-1 rounded-full border border-canvas-line p-0.5">

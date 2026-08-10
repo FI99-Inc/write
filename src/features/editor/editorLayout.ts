@@ -17,3 +17,13 @@ export function useEditorMetrics() {
     topPadding: Math.round(settings.lineHeight * 0.44),
   }
 }
+
+/** Classes for a toggle in either editor's header strip. `shrink-0
+ * whitespace-nowrap` keeps each pill at full width inside the phone's
+ * sideways-scrolling strip instead of being squeezed, and the taller mobile
+ * padding gives it a thumb-sized target. */
+export function toolbarPill(active: boolean): string {
+  return `shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 transition-colors sm:py-1 ${
+    active ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
+  }`
+}

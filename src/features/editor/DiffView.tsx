@@ -9,16 +9,16 @@ export function DiffView({ oldText, newText }: DiffViewProps) {
   const ops = diffLines(oldText, newText)
 
   return (
-    <div className="rounded-lg border border-canvas-line bg-paper font-display text-sm leading-relaxed">
+    <div className="overflow-hidden rounded-lg border border-canvas-line bg-paper font-display text-sm leading-relaxed [&>div]:break-words">
       {ops.map((op, index) => (
         <div
           key={index}
           className={
             op.type === 'added'
-              ? 'bg-verdigris/10 px-4 py-0.5 text-verdigris'
+              ? 'bg-verdigris/10 px-3 py-0.5 text-verdigris sm:px-4'
               : op.type === 'removed'
-                ? 'bg-berry/10 px-4 py-0.5 text-berry line-through decoration-berry/40'
-                : 'px-4 py-0.5 text-ink/70'
+                ? 'bg-berry/10 px-3 py-0.5 text-berry line-through decoration-berry/40 sm:px-4'
+                : 'px-3 py-0.5 text-ink/70 sm:px-4'
           }
         >
           <span className="mr-2 select-none text-ink/30">

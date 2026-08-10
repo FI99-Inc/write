@@ -40,14 +40,14 @@ export function StatsPage() {
 
   return (
     <div className="min-h-full bg-canvas">
-      <header className="flex items-center gap-5 border-b border-canvas-line px-8 py-6">
+      <header className="flex items-center gap-4 border-b border-canvas-line px-4 py-4 sm:gap-5 sm:px-8 sm:py-6">
         <Link to="/" className="text-sm text-ink/50 hover:text-indigo">
           ← Library
         </Link>
-        <h1 className="font-display text-2xl tracking-tight text-ink">Stats</h1>
+        <h1 className="font-display text-xl tracking-tight text-ink sm:text-2xl">Stats</h1>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-10 px-8 py-10">
+      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:space-y-10 sm:px-8 sm:py-10">
         {!stats ? (
           <p className="text-sm text-ink/50">Loading…</p>
         ) : (

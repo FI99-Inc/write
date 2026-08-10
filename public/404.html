@@ -2,14 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Poem Editor</title>
+    <title>WR!TE</title>
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages: https://github.com/rafgraph/spa-github-pages
       // GitHub Pages has no server-side rewrites, so a direct link or
-      // refresh on a client-routed path (e.g. /poem-editor/poem/abc123)
-      // 404s here. This encodes that path into a query string and bounces
-      // back to index.html, which decodes it before React Router mounts.
-      // pathSegmentsToKeep = 1 to preserve the /poem-editor/ prefix.
+      // refresh on a client-routed path (e.g. /poem/abc123) 404s here. This
+      // encodes that path into a query string and bounces back to
+      // index.html, which decodes it before React Router mounts.
+      // The site is served from the root of a custom domain, so there is no
+      // repo-name prefix to preserve: pathSegmentsToKeep = 0.
       var pathSegmentsToKeep = 0
       var l = window.location
       l.replace(

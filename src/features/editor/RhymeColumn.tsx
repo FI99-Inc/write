@@ -30,7 +30,10 @@ export function RhymeColumn({ lines, isOverridden, onPin, gutterRef }: RhymeColu
   return (
     <div
       ref={gutterRef}
-      className="w-14 shrink-0 overflow-hidden border-l border-canvas-line pl-2 text-xs"
+      /* Hidden on phones: 56px of scheme labels beside a ~300px screen costs
+         more than it tells you, and the rhyme-colors overlay covers the same
+         ground without taking width. */
+      className="hidden w-14 shrink-0 overflow-hidden border-l border-canvas-line pl-2 text-xs sm:block"
       style={{ paddingTop: topPadding }}
     >
       {lines.map((line, index) => {

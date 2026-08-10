@@ -36,7 +36,7 @@ export function CommandPalette() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[15vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 px-4 pt-[12dvh]"
       onClick={() => setOpen(false)}
     >
       <div
@@ -67,7 +67,7 @@ export function CommandPalette() {
           aria-label="Search commands"
           className="w-full border-b border-canvas-line bg-transparent px-4 py-3 text-sm text-ink outline-none placeholder:text-ink/30"
         />
-        <ul className="max-h-80 overflow-y-auto py-1">
+        <ul className="max-h-[50dvh] overflow-y-auto py-1 sm:max-h-80">
           {filtered.length === 0 ? (
             <li className="px-4 py-3 text-sm text-ink/40">No matching commands.</li>
           ) : (

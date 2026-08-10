@@ -67,8 +67,14 @@ export function WordInspectorPopover({ word, x, y, onClose }: WordInspectorPopov
       ref={ref}
       role="dialog"
       aria-label={`Inspector for ${word}`}
-      className="fixed z-20 w-72 rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg"
-      style={{ left: Math.min(x, window.innerWidth - 300), top: Math.min(y + 12, window.innerHeight - 320) }}
+      className="fixed z-20 w-[min(18rem,calc(100vw-1.5rem))] rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg"
+      // Clamped at both ends: on a narrow screen the "keep it on-screen"
+      // subtraction alone goes negative and pushes the popover off the
+      // opposite edge instead.
+      style={{
+        left: Math.max(12, Math.min(x, window.innerWidth - 300)),
+        top: Math.max(12, Math.min(y + 12, window.innerHeight - 320)),
+      }}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="font-display text-lg text-ink">{word}</span>
