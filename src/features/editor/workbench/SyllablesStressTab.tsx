@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { extractWords } from '@/engines/normalize'
 import { countSyllables } from '@/engines/syllables'
 import { getStressPattern } from '@/engines/stress'

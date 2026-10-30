@@ -20,14 +20,22 @@ export function CollectionsPanel({ collections }: CollectionsPanelProps) {
 
   return (
     <div className="border-b border-canvas-line px-4 py-3 text-sm sm:px-8">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="text-ink/50 hover:text-indigo">
-        {open ? '▾' : '▸'} Collections ({collections.length})
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="library-collections"
+        onClick={() => setOpen((v) => !v)}
+        className="text-ink/60 hover:text-indigo"
+      >
+        Collections ({collections.length}){' '}
+        <span className="ml-2 text-xs">{open ? 'Hide' : 'Show'}</span>
       </button>
 
       {open && (
-        <div className="mt-3 space-y-2">
+        <div id="library-collections" className="mt-3 space-y-2">
           <div className="flex gap-2">
             <input
+              aria-label="New collection name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}

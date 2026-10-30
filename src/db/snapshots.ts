@@ -1,5 +1,7 @@
 import { db } from '@/db/schema'
 import { getPoem, updatePoem } from '@/db/poems'
+import type { JSONContent } from '@tiptap/core'
+import type { StoryComment } from '@/types/story'
 import type { Snapshot } from '@/types/snapshot'
 
 export async function createSnapshot(
@@ -7,7 +9,8 @@ export async function createSnapshot(
   title: string,
   body: string,
   label?: string,
-  content?: object,
+  content?: JSONContent,
+  comments?: StoryComment[],
 ): Promise<Snapshot> {
   const snapshot: Snapshot = {
     id: crypto.randomUUID(),
@@ -17,6 +20,7 @@ export async function createSnapshot(
     createdAt: Date.now(),
     ...(label !== undefined ? { label } : {}),
     ...(content !== undefined ? { content } : {}),
+    ...(comments !== undefined ? { comments } : {}),
   }
   await db.snapshots.add(snapshot)
   return snapshot
@@ -42,13 +46,12 @@ export async function deleteSnapshot(id: string): Promise<void> {
  * itself always reversible from the history list.
  */
 export async function restoreSnapshot(id: string): Promise<void> {
-  const snapshot = await getSnapshot(id)
-  if (!snapshot) return
-
-  const current = await getPoem(snapshot.poemId)
-  if (current) {
+  await db.transaction('rw', db.poems, db.snapshots, async () => {
+    const snapshot = await getSnapshot(id)
+    if (!snapshot) return
+    const current = await getPoem(snapshot.poemId)
+    if (!current) return
     await createSnapshot(current.id, current.title, current.body, 'Before restore')
-  }
-
-  await updatePoem(snapshot.poemId, { title: snapshot.title, body: snapshot.body })
+    await updatePoem(current.id, { title: snapshot.title, body: snapshot.body })
+  })
 }

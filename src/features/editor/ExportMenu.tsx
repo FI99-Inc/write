@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { JSONContent } from '@tiptap/core'
 import { poemToPlainText, poemToMarkdown, slugifyFilename } from '@/features/editor/exportPoem'
 import { docToHtml, docToMarkdown } from '@/engines/richText/serialize'
-import { useRegisterCommands, type Command } from '@/engines/CommandPaletteContext'
+import { useRegisterCommands, type Command } from '@/engines/useCommandPalette'
 
 interface ExportMenuProps {
   title: string

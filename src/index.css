@@ -1,9 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-sans:
-    -apple-system, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-sans: -apple-system, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
 
   /* Manuscript palette: cool neutral chrome around a warm paper surface,
      ink-indigo as the working accent, verdigris/berry reserved for status. */
@@ -113,13 +112,32 @@ body,
 
 /* Rich story editor (TipTap). Tailwind's reset strips list/heading styling,
    so the ProseMirror surface needs its block rhythm restored explicitly. */
-.ProseMirror { outline: none; }
-.ProseMirror > * + * { margin-top: 0.75em; }
-.ProseMirror h1 { font-size: 1.6em; font-weight: 600; }
-.ProseMirror h2 { font-size: 1.35em; font-weight: 600; }
-.ProseMirror h3 { font-size: 1.15em; font-weight: 600; }
-.ProseMirror ul { list-style: disc; padding-left: 1.5em; }
-.ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+.ProseMirror h1 {
+  font-size: 1.6em;
+  font-weight: 600;
+}
+.ProseMirror h2 {
+  font-size: 1.35em;
+  font-weight: 600;
+}
+.ProseMirror h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
 .ProseMirror blockquote {
   border-left: 3px solid var(--color-canvas-line);
   padding-left: 1em;
@@ -131,7 +149,10 @@ body,
   border-top: 1px solid var(--color-canvas-line);
   margin: 1.5em 0;
 }
-.ProseMirror a { color: var(--color-indigo); text-decoration: underline; }
+.ProseMirror a {
+  color: var(--color-indigo);
+  text-decoration: underline;
+}
 .ProseMirror .story-comment {
   background: color-mix(in srgb, var(--color-indigo) 18%, transparent);
   border-bottom: 2px solid var(--color-indigo);
@@ -156,7 +177,9 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Printing/PDF export renders only the hidden PrintablePoem/PrintableStory
@@ -181,4 +204,51 @@ body {
   body {
     background: #ffffff;
   }
+}
+
+/* Header actions share a baseline and hit area across all writing screens. */
+.header-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--color-ink) 65%, transparent);
+}
+.header-action:hover {
+  color: var(--color-indigo);
+}
+.header-action:focus-visible {
+  outline: 2px solid var(--color-indigo);
+  outline-offset: 3px;
+}
+.ProseMirror mark,
+.ProseMirror mark * {
+  color: #2b2a33 !important;
+}
+
+/* Map the editor palette to readable theme colors without rewriting saved marks. */
+.ProseMirror span[style*='color: rgb(140, 59, 75)'],
+.ProseMirror span[style*='color: #8c3b4b'] {
+  color: var(--color-berry) !important;
+}
+.ProseMirror span[style*='color: rgb(62, 76, 140)'],
+.ProseMirror span[style*='color: #3e4c8c'] {
+  color: var(--color-indigo) !important;
+}
+.ProseMirror span[style*='color: rgb(75, 123, 111)'],
+.ProseMirror span[style*='color: #4b7b6f'] {
+  color: var(--color-verdigris) !important;
+}
+.ProseMirror span[style*='color: rgb(142, 100, 47)'],
+.ProseMirror span[style*='color: #8e642f'] {
+  color: var(--color-rhyme-amber) !important;
+}
+.ProseMirror mark span[style] {
+  color: #2b2a33 !important;
+}
+
+.header-action {
+  gap: 0.25rem;
 }

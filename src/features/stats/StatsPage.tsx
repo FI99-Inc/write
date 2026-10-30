@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link } from 'react-router-dom'
+import { useToday } from '@/engines/useToday'
+import { listDocuments } from '@/db/documents'
 import { db } from '@/db/schema'
 import {
   countByStatus,
@@ -16,26 +18,39 @@ import { POEM_STATUSES } from '@/types/poem'
 import { ActivityHeatmap } from '@/features/stats/ActivityHeatmap'
 
 export function StatsPage() {
-  const poems = useLiveQuery(() => db.poems.toArray(), [])
-  const snapshots = useLiveQuery(() => db.snapshots.toArray(), [])
+  const today = useToday()
+  const documents = useLiveQuery(() => listDocuments(), [])
+  const snapshots = useLiveQuery(async () => {
+    const active = new Set((await listDocuments()).map((doc) => doc.id))
+    const dates: { createdAt: number }[] = []
+    await db.snapshots.each((snapshot) => {
+      if (active.has(snapshot.poemId)) dates.push({ createdAt: snapshot.createdAt })
+    })
+    return dates
+  }, [])
   const customForms = useLiveQuery(() => db.customForms.toArray(), []) ?? []
 
   const stats = useMemo(() => {
-    if (!poems || !snapshots) return null
-    const heatmap = computeActivityHeatmap(collectActivityTimestamps(poems, snapshots))
+    if (!documents || !snapshots) return null
+    const poems = documents.filter((doc) => doc.kind === 'poem')
+    const heatmap = computeActivityHeatmap(collectActivityTimestamps(documents, snapshots))
     return {
-      byStatus: countByStatus(poems),
+      byStatus: countByStatus(documents),
       byForm: countByForm(poems),
-      totalWords: totalWords(poems),
-      topWords: mostUsedWords(poems, 20),
+      totalWords: totalWords(documents),
+      topWords: mostUsedWords(documents, 20),
       heatmap,
-      streak: currentStreak(heatmap),
+      streak: currentStreak(heatmap, today),
     }
-  }, [poems, snapshots])
+  }, [documents, snapshots, today])
 
   function formName(formId: string): string {
     if (formId === 'none') return 'No form'
-    return BUILT_IN_TEMPLATES_BY_ID[formId]?.name ?? customForms.find((f) => f.id === formId)?.name ?? formId
+    return (
+      BUILT_IN_TEMPLATES_BY_ID[formId]?.name ??
+      customForms.find((f) => f.id === formId)?.name ??
+      formId
+    )
   }
 
   return (
@@ -53,28 +68,38 @@ export function StatsPage() {
         ) : (
           <>
             <section>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/40">Writing streak</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/40">
+                Writing streak
+              </p>
               <p className="mb-3 font-display text-3xl text-ink">
                 {stats.streak} day{stats.streak === 1 ? '' : 's'}
               </p>
-              <ActivityHeatmap heatmap={stats.heatmap} />
+              <ActivityHeatmap heatmap={stats.heatmap} today={today} />
             </section>
 
             <section className="grid grid-cols-2 gap-6 sm:grid-cols-4">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-ink/40">Total words</p>
-                <p className="font-display text-2xl text-ink">{stats.totalWords.toLocaleString()}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink/40">
+                  Total words
+                </p>
+                <p className="font-display text-2xl text-ink">
+                  {stats.totalWords.toLocaleString()}
+                </p>
               </div>
               {POEM_STATUSES.map((status) => (
                 <div key={status}>
-                  <p className="text-xs font-medium uppercase tracking-wide text-ink/40">{status}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink/40">
+                    {status}
+                  </p>
                   <p className="font-display text-2xl text-ink">{stats.byStatus[status]}</p>
                 </div>
               ))}
             </section>
 
             <section>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/40">By form</p>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink/40">
+                Poems by form
+              </p>
               <ul className="space-y-1 text-sm">
                 {Array.from(stats.byForm.entries())
                   .sort((a, b) => b[1] - a[1])

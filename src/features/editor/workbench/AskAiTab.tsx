@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useSettings } from '@/engines/SettingsContext'
+import { useEffect, useRef, useState } from 'react'
+import { useSettings } from '@/engines/useSettings'
 import { askOllama, OllamaError, type OllamaMessage } from '@/engines/ollamaClient'
 
 interface AskAiTabProps {
@@ -7,7 +7,7 @@ interface AskAiTabProps {
 }
 
 const SYSTEM_PROMPT =
-  'You are a poetry writing assistant. The poet will share their poem-in-progress and ask about ideas, imagery, word choices, or craft. Be concise, specific, and encouraging. Do not rewrite their poem for them unless they explicitly ask you to.'
+  'You are a writing assistant. The writer will share a poem, story, idea, note, or research fragment and ask about ideas, structure, imagery, word choices, or craft. Be concise and specific. Do not rewrite their work unless they explicitly ask you to.'
 
 export function AskAiTab({ body }: AskAiTabProps) {
   const { settings } = useSettings()
@@ -15,11 +15,16 @@ export function AskAiTab({ body }: AskAiTabProps) {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const request = useRef<AbortController | null>(null)
+  useEffect(() => () => request.current?.abort(), [])
 
   if (!settings.aiEnabled) {
     return (
       <div className="space-y-2 text-sm text-ink/50">
-        <p>Ask AI is off. It&rsquo;s an optional feature that talks to a local Ollama instance you run yourself.</p>
+        <p>
+          Ask AI is off. It&rsquo;s an optional feature that talks to a local Ollama instance you
+          run yourself.
+        </p>
         <p>Turn it on in Settings to use it — the app works fully offline without it either way.</p>
       </div>
     )
@@ -45,16 +50,25 @@ export function AskAiTab({ body }: AskAiTabProps) {
     setSending(true)
     setError('')
 
+    const controller = new AbortController()
+    request.current = controller
+    const timeout = setTimeout(() => controller.abort(), 90_000)
     try {
       const context: OllamaMessage = {
         role: 'system',
-        content: `${SYSTEM_PROMPT}\n\nPoem so far:\n\n${body || '(nothing written yet)'}`,
+        content: `${SYSTEM_PROMPT}\n\nCurrent writing:\n\n${body || '(nothing written yet)'}`,
       }
-      const reply = await askOllama(settings.ollamaEndpoint, settings.ollamaModel, [context, ...nextMessages])
+      const reply = await askOllama(
+        settings.ollamaEndpoint,
+        settings.ollamaModel,
+        [context, ...nextMessages],
+        controller.signal,
+      )
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
       setError(err instanceof OllamaError ? err.message : 'Something went wrong reaching Ollama.')
     } finally {
+      clearTimeout(timeout)
       setSending(false)
     }
   }
@@ -62,19 +76,24 @@ export function AskAiTab({ body }: AskAiTabProps) {
   return (
     <div className="flex h-full flex-col">
       <p className="mb-3 text-xs text-ink/40">
-        Talking to <span className="font-medium text-ink/60">{settings.ollamaModel}</span> on your machine via
-        Ollama. Your poem stays local.
+        Using <span className="font-medium text-ink/60">{settings.ollamaModel}</span> at{' '}
+        {settings.ollamaEndpoint}. Your question includes the current writing. Choose a local
+        endpoint to keep it on your machine.
       </p>
 
       <div className="flex-1 space-y-3 overflow-y-auto">
         {messages.length === 0 && (
-          <p className="text-sm text-ink/40">Ask about an image, a word choice, where the poem might go next…</p>
+          <p className="text-sm text-ink/40">
+            Ask about an image, a word choice, where the poem might go next…
+          </p>
         )}
         {messages.map((message, index) => (
           <div
             key={index}
             className={`rounded px-3 py-2 text-sm ${
-              message.role === 'user' ? 'bg-canvas text-ink' : 'border border-canvas-line text-ink/80'
+              message.role === 'user'
+                ? 'bg-canvas text-ink'
+                : 'border border-canvas-line text-ink/80'
             }`}
           >
             {message.content}
@@ -86,6 +105,7 @@ export function AskAiTab({ body }: AskAiTabProps) {
 
       <div className="mt-3 flex gap-2">
         <textarea
+          aria-label="Ask about your writing"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

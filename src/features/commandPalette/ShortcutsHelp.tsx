@@ -1,4 +1,6 @@
-import { useCommandPaletteState } from '@/engines/CommandPaletteContext'
+import { useRef } from 'react'
+import { useModalFocus } from '@/engines/useModalFocus'
+import { useCommandPaletteState } from '@/engines/useCommandPalette'
 
 const SHORTCUTS: { keys: string; description: string }[] = [
   { keys: 'Ctrl/Cmd + K', description: 'Open the command palette' },
@@ -11,6 +13,8 @@ const SHORTCUTS: { keys: string; description: string }[] = [
 
 export function ShortcutsHelp() {
   const { shortcutsOpen, setShortcutsOpen } = useCommandPaletteState()
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useModalFocus(dialogRef, shortcutsOpen, () => setShortcutsOpen(false))
   if (!shortcutsOpen) return null
 
   return (
@@ -19,6 +23,9 @@ export function ShortcutsHelp() {
       onClick={() => setShortcutsOpen(false)}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        aria-modal="true"
         role="dialog"
         aria-label="Keyboard shortcuts"
         onClick={(e) => e.stopPropagation()}
@@ -26,7 +33,11 @@ export function ShortcutsHelp() {
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg text-ink">Keyboard shortcuts</h2>
-          <button type="button" onClick={() => setShortcutsOpen(false)} className="text-sm text-ink/40 hover:text-indigo">
+          <button
+            type="button"
+            onClick={() => setShortcutsOpen(false)}
+            className="text-sm text-ink/40 hover:text-indigo"
+          >
             Close
           </button>
         </div>

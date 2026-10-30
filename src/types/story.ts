@@ -26,6 +26,11 @@ export interface Story {
   body: string
   createdAt: number
   modifiedAt: number
+  /** Scheduling revision of the last saved text, separate from metadata edits. */
+  draftSavedAt?: number
+  deletedAt?: number
+  /** Legacy prose records without a kind are stories. */
+  kind?: 'story' | 'idea'
   tags?: string[]
   status?: PoemStatus
   favorite?: boolean

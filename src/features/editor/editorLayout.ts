@@ -1,4 +1,4 @@
-import { useSettings } from '@/engines/SettingsContext'
+import { useSettings } from '@/engines/useSettings'
 
 /** Shared pixel metrics so the gutter rows, rhyme column, overlays, and the
  * textarea's lines all stay in lockstep — every consumer reads these from

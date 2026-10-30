@@ -14,8 +14,8 @@ export class Sonnet5DB extends Dexie {
   customForms!: EntityTable<FormTemplate, 'id'>
   collections!: EntityTable<Collection, 'id'>
 
-  constructor() {
-    super('sonnet5')
+  constructor(name = 'sonnet5') {
+    super(name)
     this.version(1).stores({
       poems: 'id, title, createdAt, modifiedAt',
     })
@@ -63,6 +63,12 @@ export class Sonnet5DB extends Dexie {
       snapshots: 'id, poemId, createdAt',
       customForms: 'id, name',
       collections: 'id, name, createdAt',
+    })
+    // Existing rows remain active; absent prose kind continues to mean story.
+    this.version(8).stores({
+      poems: 'id, title, createdAt, modifiedAt, deletedAt, status, favorite, *tags, *collectionIds',
+      stories:
+        'id, title, createdAt, modifiedAt, deletedAt, kind, status, favorite, *tags, *collectionIds',
     })
   }
 }

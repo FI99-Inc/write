@@ -45,6 +45,7 @@ export function LibraryToolbar({
       {/* Full width below sm so search gets its own row and the filters wrap
        * underneath it, rather than everything fighting over 360px. */}
       <input
+        aria-label="Search library"
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search your library…"
@@ -52,7 +53,7 @@ export function LibraryToolbar({
       />
 
       <div className="flex gap-1 rounded-full border border-canvas-line p-0.5">
-        {([null, 'poem', 'story'] as const).map((k) => (
+        {([null, 'poem', 'story', 'idea'] as const).map((k) => (
           <button
             key={k ?? 'all'}
             type="button"
@@ -62,12 +63,13 @@ export function LibraryToolbar({
               kind === k ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
             }`}
           >
-            {k === 'poem' ? 'Poems' : k === 'story' ? 'Stories' : 'All'}
+            {k === 'poem' ? 'Poems' : k === 'story' ? 'Stories' : k === 'idea' ? 'Ideas' : 'All'}
           </button>
         ))}
       </div>
 
       <select
+        aria-label="Filter by status"
         value={status ?? ''}
         onChange={(e) => onStatusChange((e.target.value || null) as PoemStatus | null)}
         className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
@@ -82,6 +84,7 @@ export function LibraryToolbar({
 
       {tags.length > 0 && (
         <select
+          aria-label="Filter by tag"
           value={tag ?? ''}
           onChange={(e) => onTagChange(e.target.value || null)}
           className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
@@ -97,6 +100,7 @@ export function LibraryToolbar({
 
       {collections.length > 0 && (
         <select
+          aria-label="Filter by collection"
           value={collectionId ?? ''}
           onChange={(e) => onCollectionChange(e.target.value || null)}
           className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
@@ -116,7 +120,7 @@ export function LibraryToolbar({
         aria-pressed={favoriteOnly}
         className={`rounded-full px-3 py-1.5 ${favoriteOnly ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'}`}
       >
-        ★ Favorites
+        Favorites
       </button>
 
       <div className="ml-auto flex items-center gap-1 rounded-full border border-canvas-line p-0.5">

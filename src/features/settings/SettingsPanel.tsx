@@ -1,11 +1,23 @@
-import { useState } from 'react'
-import { useSettings } from '@/engines/SettingsContext'
+import { useEffect, useRef, useState } from 'react'
+import { useSettings } from '@/engines/useSettings'
 import { FONT_SIZE_RANGE, LINE_HEIGHT_RANGE } from '@/types/settings'
 import { listOllamaModels, OllamaError } from '@/engines/ollamaClient'
 
 export function SettingsPanel() {
   const { settings, updateSettings } = useSettings()
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!open) return
+    function close(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [open])
   const [models, setModels] = useState<string[]>([])
   const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [modelError, setModelError] = useState('')
@@ -22,7 +34,9 @@ export function SettingsPanel() {
       }
     } catch (err) {
       setModelStatus('error')
-      setModelError(err instanceof OllamaError ? err.message : 'Something went wrong reaching Ollama.')
+      setModelError(
+        err instanceof OllamaError ? err.message : 'Something went wrong reaching Ollama.',
+      )
     }
   }
 
@@ -31,8 +45,10 @@ export function SettingsPanel() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        ref={triggerRef}
         aria-expanded={open}
-        className="text-sm text-ink/50 hover:text-indigo"
+        aria-controls="writing-settings"
+        className="header-action"
       >
         Settings
       </button>
@@ -47,7 +63,12 @@ export function SettingsPanel() {
           />
           {/* Capped and scrollable: the full panel is taller than a phone in
            * landscape, and it's anchored to a header that doesn't scroll. */}
-          <div className="absolute right-0 z-20 mt-2 max-h-[75dvh] w-72 space-y-4 overflow-y-auto rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg">
+          <div
+            id="writing-settings"
+            role="region"
+            aria-label="Writing settings"
+            className="absolute right-0 z-20 mt-2 max-h-[75dvh] w-72 space-y-4 overflow-y-auto rounded-lg border border-canvas-line bg-paper p-4 text-sm shadow-lg"
+          >
             <div>
               <p className="mb-1.5 text-xs font-medium text-ink/40">Theme</p>
               <div className="flex gap-1 rounded-full border border-canvas-line p-0.5">
@@ -148,9 +169,7 @@ export function SettingsPanel() {
 
             <div className="border-t border-canvas-line pt-4">
               <label className="flex items-center justify-between">
-                <span className="text-xs font-medium text-ink/40">
-                  Ask AI (optional, local only)
-                </span>
+                <span className="text-xs font-medium text-ink/40">Ask AI (optional)</span>
                 <input
                   type="checkbox"
                   checked={settings.aiEnabled}
@@ -167,14 +186,17 @@ export function SettingsPanel() {
                 >
                   Ollama
                 </a>{' '}
-                instance you run yourself &mdash; nothing is ever sent anywhere else, and the app works fully
-                offline without it.
+                endpoint you choose. Questions include your current writing. A local endpoint keeps
+                it on your machine; a remote endpoint receives that writing.
               </p>
 
               {settings.aiEnabled && (
                 <div className="mt-3 space-y-3">
                   <div>
-                    <label htmlFor="ollama-endpoint" className="mb-1 block text-xs font-medium text-ink/40">
+                    <label
+                      htmlFor="ollama-endpoint"
+                      className="mb-1 block text-xs font-medium text-ink/40"
+                    >
                       Ollama endpoint
                     </label>
                     <input
@@ -200,7 +222,10 @@ export function SettingsPanel() {
 
                   {models.length > 0 && (
                     <div>
-                      <label htmlFor="ollama-model" className="mb-1 block text-xs font-medium text-ink/40">
+                      <label
+                        htmlFor="ollama-model"
+                        className="mb-1 block text-xs font-medium text-ink/40"
+                      >
                         Model
                       </label>
                       <select
@@ -240,8 +265,8 @@ export function SettingsPanel() {
                 >
                   Datamuse
                 </a>{' '}
-                (a free, keyless word-lookup API) for extra matches beyond the bundled dictionary — the app
-                works fully offline without it.
+                (a free, keyless word-lookup API) for extra matches beyond the bundled dictionary —
+                the app works fully offline without it.
               </p>
             </div>
           </div>

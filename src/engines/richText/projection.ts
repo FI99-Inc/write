@@ -1,12 +1,34 @@
-import { generateText, type JSONContent } from '@tiptap/core'
-import { storyExtensions } from '@/engines/richText/extensions'
-import { EMPTY_DOC } from '@/engines/richText/emptyDoc'
+import { getText, getTextSerializersFromSchema, type JSONContent } from '@tiptap/core'
+import type { Node } from '@tiptap/pm/model'
+import { getStorySchema } from '@/engines/richText/extensions'
+export { EMPTY_DOC } from '@/engines/richText/emptyDoc'
 
-export { EMPTY_DOC }
+export function nodeToPlainText(node: Node): string {
+  return getText(node, {
+    blockSeparator: '\n\n',
+    textSerializers: getTextSerializersFromSchema(node.type.schema),
+  })
+}
 
-/** The plain-text projection of a rich document — one blank line between
- * blocks so paragraph/word/reading stats and the line-based diff read it the
- * same way they read a plain story's body. */
 export function docToPlainText(doc: JSONContent): string {
-  return generateText(doc, storyExtensions, { blockSeparator: '\n\n' })
+  return nodeToPlainText(getStorySchema().nodeFromJSON(doc))
+}
+
+/** Preserve every newline while distinguishing paragraphs from single hard breaks. */
+export function plainTextToDoc(text: string): JSONContent {
+  return {
+    type: 'doc',
+    content: text
+      .replace(/\r\n?/g, '\n')
+      .split('\n\n')
+      .map((paragraph) => ({
+        type: 'paragraph',
+        content: paragraph
+          .split('\n')
+          .flatMap((line, index) => [
+            ...(index ? [{ type: 'hardBreak' }] : []),
+            ...(line ? [{ type: 'text', text: line }] : []),
+          ]),
+      })),
+  }
 }

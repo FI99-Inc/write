@@ -6,10 +6,7 @@
  * (compounds: "well-known").
  */
 export function normalizeWord(raw: string): string {
-  let word = raw
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[–—]/g, '-')
+  let word = raw.replace(/[‘’ʼ]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, '-')
 
   // A token wrapped in a matching pair of quote marks ('word', "word") is a
   // quotation, not an elision — strip both sides. A single-sided apostrophe
@@ -24,16 +21,13 @@ export function normalizeWord(raw: string): string {
 
   return word
     .toLowerCase()
-    .replace(/^[^a-z']+/, '')
-    .replace(/[^a-z']+$/, '')
+    .replace(/^[^\p{L}']+/u, '')
+    .replace(/[^\p{L}']+$/u, '')
 }
 
 /** Splits a line into normalized, non-empty words. */
 export function extractWords(line: string): string[] {
-  return line
-    .split(/\s+/)
-    .map(normalizeWord)
-    .filter((word) => word.length > 0)
+  return tokenizeLineWithSpans(line).map((span) => span.word)
 }
 
 /** The last word of a line — what end-rhyme detection keys off of. */
@@ -58,7 +52,7 @@ export interface WordAtPosition {
 }
 
 function isWordChar(ch: string): boolean {
-  return /[a-zA-Z'-]/.test(ch)
+  return /[\p{L}'‘’ʼ–—-]/u.test(ch)
 }
 
 /**

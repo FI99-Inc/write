@@ -8,7 +8,8 @@ function getScrollParent(node: HTMLElement): HTMLElement | null {
   let el = node.parentElement
   while (el) {
     const overflowY = getComputedStyle(el).overflowY
-    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) return el
+    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
+      return el
     el = el.parentElement
   }
   return null
@@ -27,7 +28,10 @@ interface PlainStoryEditorProps {
  * scrolls as one document. Extracted from StoryEditorPage so it can sit behind
  * the same StorySurfaceHandle as the rich editor. */
 export const PlainStoryEditor = forwardRef<StorySurfaceHandle, PlainStoryEditorProps>(
-  function PlainStoryEditor({ body, onBodyChange, onActiveWordChange, fontFamily, fontSize, lineHeight }, ref) {
+  function PlainStoryEditor(
+    { body, onBodyChange, onActiveWordChange, fontFamily, fontSize, lineHeight },
+    ref,
+  ) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     useImperativeHandle(ref, () => ({
@@ -83,8 +87,8 @@ export const PlainStoryEditor = forwardRef<StorySurfaceHandle, PlainStoryEditorP
         onSelect={handleSelection}
         onClick={handleSelection}
         onKeyUp={handleSelection}
-        placeholder="Once upon a time…"
-        aria-label="Story text"
+        placeholder="Start writing…"
+        aria-label="Writing text"
         spellCheck
         className="mt-6 w-full resize-none overflow-hidden bg-transparent outline-none placeholder:text-ink/30"
         style={{

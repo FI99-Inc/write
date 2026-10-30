@@ -14,14 +14,18 @@ interface RhymeHighlightBackdropProps {
  * textarea (whose own text is made transparent while this is showing) so
  * end words can be colored per rhyme group — something a plain textarea
  * can't do to its own content. */
-export function RhymeHighlightBackdrop({ lines, rhymeScheme, backdropRef }: RhymeHighlightBackdropProps) {
+export function RhymeHighlightBackdrop({
+  lines,
+  rhymeScheme,
+  backdropRef,
+}: RhymeHighlightBackdropProps) {
   const { fontSize, lineHeight, fontFamily, topPadding } = useEditorMetrics()
 
   return (
     <div
       ref={backdropRef}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre pl-6 text-ink"
+      className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre pl-3 sm:pl-6 text-ink"
       style={{
         fontSize,
         lineHeight: `${lineHeight}px`,
@@ -44,7 +48,7 @@ export function RhymeHighlightBackdrop({ lines, rhymeScheme, backdropRef }: Rhym
         return (
           <div key={index} style={{ height: lineHeight }}>
             {line.slice(0, span.start)}
-            <span style={{ color: colorForRhymeLabel(rhyme.label), fontWeight: 600 }}>
+            <span style={{ color: colorForRhymeLabel(rhyme.label) }}>
               {line.slice(span.start, span.end)}
             </span>
             {line.slice(span.end)}

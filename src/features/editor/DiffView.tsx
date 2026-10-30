@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { diffLines } from '@/engines/diff'
 
 interface DiffViewProps {
@@ -6,7 +7,7 @@ interface DiffViewProps {
 }
 
 export function DiffView({ oldText, newText }: DiffViewProps) {
-  const ops = diffLines(oldText, newText)
+  const ops = useMemo(() => diffLines(oldText, newText), [oldText, newText])
 
   return (
     <div className="overflow-hidden rounded-lg border border-canvas-line bg-paper font-display text-sm leading-relaxed [&>div]:break-words">

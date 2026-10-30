@@ -1,5 +1,11 @@
-import { memo, useEffect, useRef, type Ref } from 'react'
-import { scanLine, stressSequence, applyScansionOverrides, type ScansionSyllable } from '@/engines/scansion'
+import { memo, useMemo, type Ref } from 'react'
+import { cacheLineAnalysis } from '@/engines/lineCache'
+import {
+  scanLine,
+  stressSequence,
+  applyScansionOverrides,
+  type ScansionSyllable,
+} from '@/engines/scansion'
 import { findDeviations, type Foot } from '@/engines/meter'
 import { splitWordIntoSyllableChunks } from '@/engines/syllableSplit'
 import type { DictionaryIndex } from '@/engines/dictionary'
@@ -19,10 +25,19 @@ interface ScansionOverlayProps {
 interface Segment {
   key: string
   text: string
-  syllable?: { lineIndex: number; syllableIndex: number; stress: 0 | 1; deviates: boolean; overridden: boolean }
+  syllable?: {
+    lineIndex: number
+    syllableIndex: number
+    stress: 0 | 1
+    deviates: boolean
+    overridden: boolean
+  }
 }
 
-function overridesForLine(scansionOverrides: Record<string, 0 | 1>, lineIndex: number): Map<number, 0 | 1> {
+function overridesForLine(
+  scansionOverrides: Record<string, 0 | 1>,
+  lineIndex: number,
+): Map<number, 0 | 1> {
   const map = new Map<number, 0 | 1>()
   const prefix = `${lineIndex}-`
   for (const [key, value] of Object.entries(scansionOverrides)) {
@@ -104,11 +119,7 @@ const ScansionLineRow = memo(function ScansionLineRow({
   onToggleSyllable,
 }: ScansionLineRowProps) {
   if (line.trim().length === 0) {
-    return (
-      <div style={{ height: lineHeight }}>
-        {' '}
-      </div>
-    )
+    return <div style={{ height: lineHeight }}> </div>
   }
 
   const lineOverrides = overridesForLine(scansionOverrides, lineIndex)
@@ -116,7 +127,13 @@ const ScansionLineRow = memo(function ScansionLineRow({
   const deviations = targetMeter
     ? new Set(findDeviations(stressSequence(syllables), targetMeter.foot, targetMeter.feet))
     : new Set<number>()
-  const segments = buildLineSegments(line, lineIndex, syllables, deviations, new Set(lineOverrides.keys()))
+  const segments = buildLineSegments(
+    line,
+    lineIndex,
+    syllables,
+    deviations,
+    new Set(lineOverrides.keys()),
+  )
 
   return (
     <div style={{ height: lineHeight, position: 'relative' }}>
@@ -125,8 +142,12 @@ const ScansionLineRow = memo(function ScansionLineRow({
           <span key={segment.key} className="relative inline-block">
             <span
               role="button"
+              aria-label={`Line ${lineIndex + 1}, syllable ${segment.syllable.syllableIndex + 1}: ${segment.syllable.stress ? 'stressed' : 'unstressed'}`}
+              aria-pressed={segment.syllable.stress === 1}
               tabIndex={0}
-              onClick={() => onToggleSyllable(segment.syllable!.lineIndex, segment.syllable!.syllableIndex)}
+              onClick={() =>
+                onToggleSyllable(segment.syllable!.lineIndex, segment.syllable!.syllableIndex)
+              }
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
@@ -172,24 +193,18 @@ export function ScansionOverlay({
   // long poem only the line(s) actually being edited change between
   // keystrokes — caching by line text avoids re-scanning every other line
   // on every render.
-  const scanCache = useRef(new Map<string, ScansionSyllable[]>())
-  useEffect(() => {
-    scanCache.current = new Map()
-  }, [dict, wordOverrides])
+  const analyzeLines = useMemo(
+    () => cacheLineAnalysis((line: string) => scanLine(line, dict, wordOverrides)),
+    [dict, wordOverrides],
+  )
 
-  function getScan(line: string): ScansionSyllable[] {
-    const cached = scanCache.current.get(line)
-    if (cached) return cached
-    const computed = scanLine(line, dict, wordOverrides)
-    scanCache.current.set(line, computed)
-    return computed
-  }
-
+  const scans = useMemo(() => analyzeLines(lines), [analyzeLines, lines])
   return (
     <div
       ref={backdropRef}
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre pl-6 text-ink"
+      role="group"
+      aria-label="Syllable stress controls"
+      className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre pl-3 sm:pl-6 text-ink"
       style={{
         fontSize,
         lineHeight: `${lineHeight}px`,
@@ -202,7 +217,7 @@ export function ScansionOverlay({
           key={lineIndex}
           line={line}
           lineIndex={lineIndex}
-          syllables={getScan(line)}
+          syllables={scans[lineIndex]}
           scansionOverrides={scansionOverrides}
           targetMeter={targetMeter}
           lineHeight={lineHeight}

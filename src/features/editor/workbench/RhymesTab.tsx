@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { findRhymesIndexed } from '@/engines/rhymeIndex'
 import { countSyllables } from '@/engines/syllables'
 import type { DictionaryIndex } from '@/engines/dictionary'
@@ -83,7 +83,8 @@ export function RhymesTab({ word, onInsert }: RhymesTabProps) {
   const localMatches = useMemo(() => new Set([...rhymes.perfect, ...rhymes.slant]), [rhymes])
 
   if (!dict) return <p className="text-sm text-ink/40">Loading dictionary…</p>
-  if (!word) return <p className="text-sm text-ink/40">Click into a line to see rhymes for its last word.</p>
+  if (!word)
+    return <p className="text-sm text-ink/40">Click into a line to see rhymes for its last word.</p>
 
   return (
     <div className="space-y-5">

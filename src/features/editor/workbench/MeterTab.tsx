@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { analyzePoemMeter } from '@/engines/meterReport'
 
 interface MeterTabProps {
@@ -9,7 +9,10 @@ interface MeterTabProps {
 export function MeterTab({ body }: MeterTabProps) {
   const { dict, overrides } = useDictionary()
 
-  const report = useMemo(() => (dict ? analyzePoemMeter(body, dict, overrides) : null), [body, dict, overrides])
+  const report = useMemo(
+    () => (dict ? analyzePoemMeter(body, dict, overrides) : null),
+    [body, dict, overrides],
+  )
 
   if (!dict || !report) return <p className="text-sm text-ink/40">Loading dictionary…</p>
 
@@ -45,7 +48,9 @@ export function MeterTab({ body }: MeterTabProps) {
                   <span className={line.detection.confidence < 0.8 ? 'text-berry' : 'text-ink'}>
                     {line.detection.name}
                   </span>
-                  <span className="text-xs text-ink/35">{Math.round(line.detection.confidence * 100)}%</span>
+                  <span className="text-xs text-ink/35">
+                    {Math.round(line.detection.confidence * 100)}%
+                  </span>
                 </span>
               ) : (
                 <span className="text-ink/30">—</span>
@@ -61,8 +66,8 @@ export function MeterTab({ body }: MeterTabProps) {
           <p className="text-sm text-ink/60">
             Line{report.irregularLines.length === 1 ? '' : 's'}{' '}
             {report.irregularLines.map((i) => i + 1).join(', ')}{' '}
-            {report.irregularLines.length === 1 ? 'deviates' : 'deviate'} substantially from any regular
-            meter.
+            {report.irregularLines.length === 1 ? 'deviates' : 'deviate'} substantially from any
+            regular meter.
           </p>
         </div>
       )}

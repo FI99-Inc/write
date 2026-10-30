@@ -5,7 +5,13 @@ import { createStory } from '@/db/stories'
 import { createSnapshot, listSnapshots } from '@/db/snapshots'
 import { createCollection } from '@/db/collections'
 import { setOverride } from '@/db/overrides'
-import { exportLibrary, exportPoem, exportStory, exportCollection, importLibrary } from '@/db/libraryExport'
+import {
+  exportLibrary,
+  exportPoem,
+  exportStory,
+  exportCollection,
+  importLibrary,
+} from '@/db/libraryExport'
 
 beforeEach(async () => {
   await db.poems.clear()
@@ -30,7 +36,7 @@ describe('exportLibrary', () => {
     expect(data.snapshots).toHaveLength(1)
     expect(data.collections).toHaveLength(1)
     expect(data.wordOverrides).toHaveLength(1)
-    expect(data.version).toBe(1)
+    expect(data.version).toBe(2)
   })
 })
 
@@ -100,6 +106,7 @@ describe('importLibrary', () => {
     expect(result).toEqual({
       poemsAdded: 1,
       storiesAdded: 0,
+      ideasAdded: 0,
       collectionsAdded: 1,
       customFormsAdded: 0,
       wordOverridesAdded: 0,

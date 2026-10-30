@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { dictionaryWordList, randomWord } from '@/engines/randomWord'
 import { WRITING_PROMPTS, randomPrompt } from '@/data/prompts'
 
@@ -8,7 +8,7 @@ interface SparkTabProps {
 }
 
 export function SparkTab({ onInsert }: SparkTabProps) {
-  const { dict } = useDictionary()
+  const { dict, error, retry } = useDictionary()
   const words = useMemo(() => (dict ? dictionaryWordList(dict) : []), [dict])
 
   const [prompt, setPrompt] = useState(() => randomPrompt())
@@ -17,7 +17,9 @@ export function SparkTab({ onInsert }: SparkTabProps) {
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink/40">Writing prompt</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-ink/40">
+          Writing prompt
+        </h3>
         <p className="rounded border border-canvas-line bg-canvas px-3 py-3 text-sm leading-relaxed text-ink">
           {prompt}
         </p>
@@ -33,7 +35,14 @@ export function SparkTab({ onInsert }: SparkTabProps) {
 
       <section className="space-y-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-ink/40">Random word</h3>
-        {!dict ? (
+        {error ? (
+          <p role="alert" className="text-sm text-berry">
+            {error}{' '}
+            <button type="button" className="underline" onClick={retry}>
+              Retry
+            </button>
+          </p>
+        ) : !dict ? (
           <p className="text-sm text-ink/40">Loading dictionary…</p>
         ) : (
           <>

@@ -5,6 +5,10 @@ export interface Poem {
   body: string
   createdAt: number
   modifiedAt: number
+  /** Scheduling revision of the last saved text, separate from metadata edits. */
+  draftSavedAt?: number
+  /** Present only while this document is in recoverable Trash. */
+  deletedAt?: number
   /** User-pinned rhyme-scheme labels, keyed by line index — overrides the
    * automatically detected label for that line only. */
   rhymeOverrides?: Record<number, string>

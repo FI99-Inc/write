@@ -2,7 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import type { Editor, JSONContent } from '@tiptap/core'
 import { storyExtensions } from '@/engines/richText/extensions'
-import { docToPlainText } from '@/engines/richText/projection'
+import { parseClipboardText, normalizeClipboardHtml } from '@/engines/richText/clipboard'
+import { nodeToPlainText } from '@/engines/richText/projection'
 import { normalizeWord } from '@/engines/normalize'
 import type { StorySurfaceHandle } from '@/features/editor/story/storySurface'
 
@@ -12,7 +13,7 @@ export interface RichStoryHandle extends StorySurfaceHandle {
 
 interface RichStoryEditorProps {
   content: JSONContent
-  onChange: (content: JSONContent) => void
+  onChange: (content: JSONContent, text: string) => void
   onActiveWordChange: (word: string | null) => void
   /** Notified with the live editor instance once TipTap finishes creating it
    * (and with `null` just before it's destroyed), so a parent can drive an
@@ -44,8 +45,8 @@ function activeWordFromEditor(editor: Editor | null): string | null {
   // projected-text length of that prefix, since it's the same deterministic
   // walk truncated earlier.
   const localCaret = state.doc.textBetween(rangeStart, from, '\n', ' ').length
-  const before = parentText.slice(0, localCaret).match(/[\p{L}'-]+$/u)?.[0] ?? ''
-  const after = parentText.slice(localCaret).match(/^[\p{L}'-]+/u)?.[0] ?? ''
+  const before = parentText.slice(0, localCaret).match(/[\p{L}'‘’ʼ–—-]+$/u)?.[0] ?? ''
+  const after = parentText.slice(localCaret).match(/^[\p{L}'‘’ʼ–—-]+/u)?.[0] ?? ''
   const raw = before + after
   const word = normalizeWord(raw)
   return word.length > 0 ? word : null
@@ -60,7 +61,12 @@ export const RichStoryEditor = forwardRef<RichStoryHandle, RichStoryEditorProps>
       extensions: storyExtensions,
       content,
       immediatelyRender: false,
-      onUpdate: ({ editor }) => onChange(editor.getJSON()),
+      editorProps: {
+        attributes: { 'aria-label': 'Writing text' },
+        clipboardTextParser: parseClipboardText,
+        transformPastedHTML: normalizeClipboardHtml,
+      },
+      onUpdate: ({ editor }) => onChange(editor.getJSON(), nodeToPlainText(editor.state.doc)),
       onSelectionUpdate: ({ editor }) => onActiveWordChange(activeWordFromEditor(editor)),
     })
 
@@ -79,8 +85,9 @@ export const RichStoryEditor = forwardRef<RichStoryHandle, RichStoryEditorProps>
       () => ({
         editor,
         getActiveWord: () => activeWordFromEditor(editor),
-        insertText: (text: string) => editor?.chain().focus().insertContent(text).run(),
-        getPlainText: () => (editor ? docToPlainText(editor.getJSON()) : ''),
+        insertText: (text: string) =>
+          editor?.chain().focus().insertContent({ type: 'text', text }).run(),
+        getPlainText: () => (editor ? nodeToPlainText(editor.state.doc) : ''),
       }),
       [editor],
     )

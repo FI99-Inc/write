@@ -52,7 +52,9 @@ export function StoryHistoryPage() {
   if (story === null) {
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-4 bg-canvas">
-        <p className="font-display text-lg text-ink">This story doesn&rsquo;t exist (anymore).</p>
+        <p className="font-display text-lg text-ink">
+          This writing is unavailable. It may be in Trash.
+        </p>
         <button type="button" onClick={() => navigate('/')} className="text-indigo hover:underline">
           Back to library
         </button>
@@ -63,25 +65,33 @@ export function StoryHistoryPage() {
   return (
     <div className="min-h-full bg-canvas">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-canvas-line px-4 py-3 sm:px-8 sm:py-4">
-        <Link to={`/story/${id}`} className="text-sm text-ink/50 transition-colors hover:text-indigo">
-          ← Back to story
+        <Link
+          to={`/${story.kind ?? 'story'}/${id}`}
+          className="text-sm text-ink/50 transition-colors hover:text-indigo"
+        >
+          ← Back to {story.kind === 'idea' ? 'idea' : 'story'}
         </Link>
-        <h1 className="min-w-0 truncate font-display text-base text-ink sm:text-lg">{story.title || 'Untitled'} — History</h1>
+        <h1 className="min-w-0 truncate font-display text-base text-ink sm:text-lg">
+          {story.title || 'Untitled'} — History
+        </h1>
         <span className="hidden sm:block sm:w-24" />
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-8 sm:py-10">
         {snapshots.length === 0 ? (
           <p className="text-sm text-ink/50">
-            No snapshots yet. Use the &ldquo;Snapshot&rdquo; button in the editor to save a checkpoint you can
-            come back to.
+            No snapshots yet. Use the &ldquo;Snapshot&rdquo; button in the editor to save a
+            checkpoint you can come back to.
           </p>
         ) : (
           <ul className="mb-10 divide-y divide-canvas-line rounded-lg border border-canvas-line bg-paper">
             {versions
               .filter((v) => v.id !== CURRENT)
               .map((version) => (
-                <li key={version.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
+                <li
+                  key={version.id}
+                  className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6"
+                >
                   <span className="text-sm text-ink/70">{version.label}</span>
                   {pendingRestoreId === version.id ? (
                     <div className="flex shrink-0 flex-wrap items-center gap-3 text-sm">
