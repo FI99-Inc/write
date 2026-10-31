@@ -314,6 +314,8 @@ test('Trash restores writing and history, then purges both only after confirmati
     .getByRole('listitem')
     .filter({ has: page.getByRole('heading', { name: 'Trash lifecycle', exact: true }) })
   await row.getByRole('button', { name: 'Restore', exact: true }).click()
+  // Wait for the committed restore before a full navigation can unload its transaction.
+  await expect(row).toHaveCount(0)
   await page.goto(url)
   await expect(page.locator('[contenteditable="true"]')).toHaveText('Keep until I confirm')
   await page.getByRole('link', { name: 'History', exact: true }).click()
