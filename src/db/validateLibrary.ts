@@ -39,9 +39,14 @@ function comments(value: unknown): void {
 /** Validate before a preview or any writes. Version 1 backups remain supported. */
 export async function parseLibraryExport(value: unknown): Promise<LibraryExportData> {
   const data = record(value, 'library file')
-  if (data.version !== 1 && data.version !== 2) throw new Error('Unsupported library version.')
+  if (data.version !== 1 && data.version !== 2 && data.version !== 3)
+    throw new Error('Unsupported library version.')
   number(data.exportedAt, 'export date')
-  const normalized: RecordValue = { ...data, stories: data.stories ?? [] }
+  const normalized: RecordValue = {
+    ...data,
+    stories: data.stories ?? [],
+    projects: data.projects ?? [],
+  }
   const rows: Record<string, RecordValue[]> = {}
   for (const key of [
     'poems',
@@ -50,6 +55,7 @@ export async function parseLibraryExport(value: unknown): Promise<LibraryExportD
     'collections',
     'customForms',
     'wordOverrides',
+    'projects',
   ] as const) {
     const list = normalized[key]
     if (!Array.isArray(list)) throw new Error(`Missing or invalid ${key}.`)
@@ -59,6 +65,7 @@ export async function parseLibraryExport(value: unknown): Promise<LibraryExportD
   const documents = [...rows.poems, ...rows.stories]
   unique(documents, 'document')
   for (const item of documents) {
+    if (item.sourceIdeaId !== undefined) string(item.sourceIdeaId, 'source Idea id')
     string(item.title, 'document title')
     string(item.body, 'document text')
     number(item.createdAt, 'creation date')
@@ -116,6 +123,25 @@ export async function parseLibraryExport(value: unknown): Promise<LibraryExportD
     string(item.body, 'snapshot text')
     number(item.createdAt, 'snapshot date')
     if (item.label !== undefined) string(item.label, 'snapshot label')
+  }
+  for (const project of rows.projects) {
+    string(project.name, 'project name')
+    string(project.description, 'project description')
+    number(project.createdAt, 'project creation date')
+    number(project.modifiedAt, 'project modified date')
+    if (!Array.isArray(project.items)) throw new Error('Invalid project writing.')
+    const ids = new Set<string>()
+    for (const rawItem of project.items) {
+      const item = record(rawItem, 'project item')
+      string(item.documentId, 'project document id')
+      if (
+        !['poem', 'story', 'idea'].includes(String(item.kind)) ||
+        !['chapter', 'scene', 'reference'].includes(String(item.role)) ||
+        ids.has(String(item.documentId))
+      )
+        throw new Error('Invalid or duplicate project item.')
+      ids.add(String(item.documentId))
+    }
   }
   for (const item of rows.collections) {
     string(item.name, 'collection name')

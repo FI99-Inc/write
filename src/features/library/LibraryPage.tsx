@@ -13,6 +13,8 @@ import { LibraryListItem } from '@/features/library/LibraryListItem'
 import { LibraryToolbar } from '@/features/library/LibraryToolbar'
 import { CollectionsPanel } from '@/features/library/CollectionsPanel'
 import { ImportExportPanel } from '@/features/library/ImportExportPanel'
+import { ImportDocumentButton } from '@/features/library/ImportDocumentButton'
+import { AppHeader } from '@/features/workspace/AppHeader'
 import { SettingsPanel } from '@/features/settings/SettingsPanel'
 
 export function LibraryPage() {
@@ -31,6 +33,17 @@ export function LibraryPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 
   const deferredSearch = useDeferredValue(searchQuery)
+  const resultKey = JSON.stringify([
+    deferredSearch,
+    kind,
+    status,
+    tag,
+    collectionId,
+    favoriteOnly,
+    viewMode,
+  ])
+  const [page, setPage] = useState({ key: '', limit: 100 })
+  const visibleLimit = page.key === resultKey ? page.limit : 100
 
   const tags = useMemo(() => allTags(docs ?? []), [docs])
 
@@ -62,16 +75,19 @@ export function LibraryPage() {
 
   return (
     <div className="min-h-full bg-canvas">
-      <header className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-canvas-line px-4 py-4 sm:px-8 sm:py-6">
-        {/* The exclamation stands in for the I — the mark of emphasis sitting
-         * inside the word itself. Tracked out so it reads as a masthead. */}
-        <h1 className="mr-auto font-display text-xl tracking-[0.2em] text-ink sm:text-2xl">
-          WR<span className="text-indigo">!</span>TE
-        </h1>
-        <nav aria-label="Library actions" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      <AppHeader />
+      <header className="wr-library-actions">
+        <nav
+          aria-label="Library actions"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1"
+        >
+          <Link to="/backups" className="header-action">
+            Backups
+          </Link>
           <Link to="/stats" className="header-action">
             Stats
           </Link>
+          <ImportDocumentButton />
           <ImportExportPanel />
           <SettingsPanel />
           <Link to="/trash" className="header-action">
@@ -80,7 +96,7 @@ export function LibraryPage() {
         </nav>
         {/* `w-full` drops the pair onto its own full-width row below sm,
          * where they'd otherwise be squeezed to a couple of characters. */}
-        <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
+        <div className="wr-new-writing">
           <button
             type="button"
             onClick={() => void handleNew('idea')}
@@ -127,12 +143,15 @@ export function LibraryPage() {
       />
 
       <main className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-10">
+        <h1 className="mb-6 font-display text-3xl">Your writing</h1>
         {docs === undefined ? (
           <p className="text-sm text-ink/50">Loading your library…</p>
         ) : docs.length === 0 ? (
           <div className="rounded-lg border border-dashed border-canvas-line px-5 py-12 text-center sm:px-6 sm:py-16">
             <p className="font-display text-lg text-ink/70">An empty shelf.</p>
-            <p className="mt-2 text-sm text-ink/50">Start a poem, story, or idea.</p>
+            <p className="mt-2 text-sm text-ink/50">
+              Start a poem, story, or idea.
+            </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <button
                 type="button"
@@ -151,10 +170,12 @@ export function LibraryPage() {
             </div>
           </div>
         ) : filteredDocs && filteredDocs.length === 0 ? (
-          <p className="py-10 text-center text-sm text-ink/50">Nothing matches these filters.</p>
+          <p className="py-10 text-center text-sm text-ink/50">
+            Nothing matches these filters.
+          </p>
         ) : viewMode === 'list' ? (
           <ul className="divide-y divide-canvas-line rounded-lg border border-canvas-line bg-paper">
-            {filteredDocs?.map((doc) => (
+            {filteredDocs?.slice(0, visibleLimit).map((doc) => (
               <li key={doc.id}>
                 <LibraryListItem
                   doc={doc}
@@ -167,7 +188,7 @@ export function LibraryPage() {
           </ul>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredDocs?.map((doc) => (
+            {filteredDocs?.slice(0, visibleLimit).map((doc) => (
               <LibraryListItem
                 key={doc.id}
                 doc={doc}
@@ -176,6 +197,21 @@ export function LibraryPage() {
                 viewMode="grid"
               />
             ))}
+          </div>
+        )}
+        {filteredDocs && filteredDocs.length > visibleLimit && (
+          <div className="mt-6 text-center">
+            <p className="mb-3 text-xs text-ink/60">
+              Showing {visibleLimit} of {filteredDocs.length} documents
+            </p>
+            <button
+              className="action-secondary"
+              onClick={() =>
+                setPage({ key: resultKey, limit: visibleLimit + 100 })
+              }
+            >
+              Show more writing
+            </button>
           </div>
         )}
       </main>

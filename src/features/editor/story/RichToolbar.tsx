@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useEditorState } from '@tiptap/react'
 import type { Editor } from '@tiptap/core'
 import { ToolbarIcon } from '@/features/editor/story/ToolbarIcon'
@@ -14,6 +15,7 @@ const COLORS = ['#8c3b4b', '#3e4c8c', '#4b7b6f', '#8e642f']
 /** A Google-Docs-style formatting toolbar. Reads active-mark state so buttons
  * reflect the current selection. Null-safe: renders disabled when no editor. */
 export function RichToolbar({ editor, onAddComment }: RichToolbarProps) {
+  const [more, setMore] = useState(false)
   const state = useEditorState({
     editor,
     selector: ({ editor }) =>
@@ -163,72 +165,85 @@ export function RichToolbar({ editor, onAddComment }: RichToolbarProps) {
         >
           <ToolbarIcon name="rule" />
         </button>
-        <span className="mx-1 h-5 w-px shrink-0 bg-canvas-line" />
         <button
+          className={btn(more)}
           type="button"
-          aria-label="Align left"
-          aria-pressed={state?.alignLeft}
-          className={btn(state?.alignLeft)}
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          aria-expanded={more}
+          aria-controls="extra-formatting"
+          onClick={() => setMore(!more)}
         >
-          <ToolbarIcon name="left" />
+          More formatting
         </button>
-        <button
-          type="button"
-          aria-label="Align center"
-          aria-pressed={state?.alignCenter}
-          className={btn(state?.alignCenter)}
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        >
-          <ToolbarIcon name="center" />
-        </button>
-        <button
-          type="button"
-          aria-label="Align right"
-          aria-pressed={state?.alignRight}
-          className={btn(state?.alignRight)}
-          onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        >
-          <ToolbarIcon name="right" />
-        </button>
-        <span className="mx-1 h-5 w-px shrink-0 bg-canvas-line" />
-        <button
-          type="button"
-          aria-label="Link"
-          aria-pressed={state?.link}
-          className={btn(state?.link)}
-          onClick={setLink}
-        >
-          <ToolbarIcon name="link" />
-        </button>
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-label={`Text color ${c}`}
-            className={`${swatch} rounded-full`}
-            style={{ background: c }}
-            onClick={() => editor.chain().focus().setColor(c).run()}
-          />
-        ))}
-        {HIGHLIGHTS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-label={`Highlight ${c}`}
-            className={`${swatch} rounded`}
-            style={{ background: c }}
-            onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
-          />
-        ))}
-        <button
-          type="button"
-          aria-label="Clear color"
-          className={btn(false)}
-          onClick={() => editor.chain().focus().unsetColor().unsetHighlight().run()}
-        >
-          Clear
-        </button>
+        {more && (
+          <div id="extra-formatting" className="flex items-center gap-0.5">
+            <span className="mx-1 h-5 w-px shrink-0 bg-canvas-line" />
+            <button
+              type="button"
+              aria-label="Align left"
+              aria-pressed={state?.alignLeft}
+              className={btn(state?.alignLeft)}
+              onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            >
+              <ToolbarIcon name="left" />
+            </button>
+            <button
+              type="button"
+              aria-label="Align center"
+              aria-pressed={state?.alignCenter}
+              className={btn(state?.alignCenter)}
+              onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            >
+              <ToolbarIcon name="center" />
+            </button>
+            <button
+              type="button"
+              aria-label="Align right"
+              aria-pressed={state?.alignRight}
+              className={btn(state?.alignRight)}
+              onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            >
+              <ToolbarIcon name="right" />
+            </button>
+            <span className="mx-1 h-5 w-px shrink-0 bg-canvas-line" />
+            <button
+              type="button"
+              aria-label="Link"
+              aria-pressed={state?.link}
+              className={btn(state?.link)}
+              onClick={setLink}
+            >
+              <ToolbarIcon name="link" />
+            </button>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Text color ${c}`}
+                className={`${swatch} rounded-full`}
+                style={{ background: c }}
+                onClick={() => editor.chain().focus().setColor(c).run()}
+              />
+            ))}
+            {HIGHLIGHTS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Highlight ${c}`}
+                className={`${swatch} rounded`}
+                style={{ background: c }}
+                onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
+              />
+            ))}
+            <button
+              type="button"
+              aria-label="Clear color"
+              className={btn(false)}
+              onClick={() => editor.chain().focus().unsetColor().unsetHighlight().run()}
+            >
+              Clear
+            </button>
+          </div>
+        )}
         <span className="mx-1 h-5 w-px shrink-0 bg-canvas-line" />
         <button
           type="button"

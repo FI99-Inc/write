@@ -1,3 +1,4 @@
+import { useSettings } from '@/engines/useSettings'
 import { useRecentWords } from '@/engines/useRecentWords'
 import { useMemo, useState } from 'react'
 import { DictionaryProvider } from '@/engines/DictionaryContext'
@@ -42,19 +43,24 @@ export function StoryWorkbenchSidebar({
   onClose,
   commentsProps,
 }: StoryWorkbenchSidebarProps) {
+  const { settings } = useSettings()
   const [choice, setChoice] = useState<{ id: TabId; request?: number }>({ id: 'thesaurus' })
   const recent = useRecentWords(activeWord)
   const activeCommentId = commentsProps?.activeCommentId
   const focusRequest = commentsProps?.focusRequest
-  const tab = activeCommentId && choice.request !== focusRequest ? 'comments' : choice.id
+  const candidate = activeCommentId && choice.request !== focusRequest ? 'comments' : choice.id
+  const tab = candidate === 'ai' && !settings.aiEnabled ? 'thesaurus' : candidate
 
   const word = activeWord ?? ''
 
   // Plain stories have no comment threads (commentsProps is undefined) — hide
   // the tab entirely rather than showing a button that opens to nothing.
   const visibleTabs = useMemo(
-    () => TABS.filter((t) => t.id !== 'comments' || commentsProps),
-    [commentsProps],
+    () =>
+      TABS.filter(
+        (t) => (t.id !== 'comments' || commentsProps) && (t.id !== 'ai' || settings.aiEnabled),
+      ),
+    [commentsProps, settings.aiEnabled],
   )
 
   return (

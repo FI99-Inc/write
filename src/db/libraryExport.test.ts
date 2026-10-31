@@ -36,7 +36,7 @@ describe('exportLibrary', () => {
     expect(data.snapshots).toHaveLength(1)
     expect(data.collections).toHaveLength(1)
     expect(data.wordOverrides).toHaveLength(1)
-    expect(data.version).toBe(2)
+    expect(data.version).toBe(3)
   })
 })
 
@@ -111,6 +111,7 @@ describe('importLibrary', () => {
       customFormsAdded: 0,
       wordOverridesAdded: 0,
       snapshotsAdded: 1,
+      projectsAdded: 0,
     })
 
     const restored = await getPoem(poem.id)

@@ -167,7 +167,9 @@ describe('library compatibility', () => {
       expect(document?.body).toBe('keep me')
       expect(document?.deletedAt).toBeUndefined()
       expect(document?.kind).toBeUndefined()
-      expect(upgraded.verno).toBe(8)
+      expect(upgraded.verno).toBe(9)
+      expect(await upgraded.projects.count()).toBe(0)
+      expect(await upgraded.backupPreferences.count()).toBe(0)
     } finally {
       await upgraded.delete()
     }

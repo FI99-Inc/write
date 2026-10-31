@@ -3,16 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta
       name="description"
-      content="WR!TE — a local-first editor for poems and short stories, with live scansion, rhyme, and form analysis. Works offline."
+      content="WR!TE — a local-first workspace for poems, stories, and Ideas, with projects, versions, and writing tools. Works offline."
     />
-    <!-- Tints the mobile browser chrome to match the canvas. The in-app theme
-         toggle is a data-attribute, which meta tags can't follow, so these
-         track the OS preference — the common case. -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f0ee" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1c1b20" />
+    <meta name="theme-color" content="#2b2b23" />
+    <script>
+      // Apply saved appearance before the first painted frame.
+      try {
+        var appearance = JSON.parse(
+          localStorage.getItem('sonnet5-settings') || '{}',
+        ).theme
+        document.documentElement.dataset.theme = [
+          'olive',
+          'dusk',
+          'sand',
+          'light',
+          'dark',
+        ].includes(appearance)
+          ? appearance
+          : 'olive'
+      } catch (_) {
+        document.documentElement.dataset.theme = 'olive'
+      }
+    </script>
     <title>WR!TE</title>
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages: https://github.com/rafgraph/spa-github-pages
@@ -27,7 +45,11 @@
               return s.replace(/~and~/g, '&')
             })
             .join('?')
-          window.history.replaceState(null, '', l.pathname.slice(0, -1) + decoded + l.hash)
+          window.history.replaceState(
+            null,
+            '',
+            l.pathname.slice(0, -1) + decoded + l.hash,
+          )
         }
       })(window.location)
     </script>

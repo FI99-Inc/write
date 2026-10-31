@@ -6,9 +6,10 @@ import type { Snapshot } from '@/types/snapshot'
 import type { WordOverride } from '@/types/override'
 import type { FormTemplate } from '@/types/form'
 import type { Collection } from '@/types/collection'
+import type { Project } from '@/types/project'
 
 export interface LibraryExportData {
-  version: 1 | 2
+  version: 1 | 2 | 3
   exportedAt: number
   poems: Poem[]
   stories: Story[]
@@ -16,31 +17,49 @@ export interface LibraryExportData {
   wordOverrides: WordOverride[]
   customForms: FormTemplate[]
   collections: Collection[]
+  projects?: Project[]
 }
 
 function emptyExport(): Omit<LibraryExportData, 'poems' | 'stories' | 'snapshots' | 'collections'> {
-  return { version: 2, exportedAt: Date.now(), wordOverrides: [], customForms: [] }
+  return { version: 3, exportedAt: Date.now(), wordOverrides: [], customForms: [], projects: [] }
 }
 
 export async function exportLibrary(): Promise<LibraryExportData> {
-  const [poems, stories, snapshots, wordOverrides, customForms, collections] = await Promise.all([
-    db.poems.toArray(),
-    db.stories.toArray(),
-    db.snapshots.toArray(),
-    db.wordOverrides.toArray(),
-    db.customForms.toArray(),
-    db.collections.toArray(),
-  ])
-  return {
-    version: 2,
-    exportedAt: Date.now(),
-    poems,
-    stories,
-    snapshots,
-    wordOverrides,
-    customForms,
-    collections,
-  }
+  return db.transaction(
+    'r',
+    [
+      db.poems,
+      db.stories,
+      db.snapshots,
+      db.wordOverrides,
+      db.customForms,
+      db.collections,
+      db.projects,
+    ],
+    async () => {
+      const [poems, stories, snapshots, wordOverrides, customForms, collections, projects] =
+        await Promise.all([
+          db.poems.toArray(),
+          db.stories.toArray(),
+          db.snapshots.toArray(),
+          db.wordOverrides.toArray(),
+          db.customForms.toArray(),
+          db.collections.toArray(),
+          db.projects.toArray(),
+        ])
+      return {
+        version: 3,
+        exportedAt: Date.now(),
+        poems,
+        stories,
+        snapshots,
+        wordOverrides,
+        customForms,
+        collections,
+        projects,
+      }
+    },
+  )
 }
 
 export async function exportPoem(poemId: string): Promise<LibraryExportData> {
@@ -65,7 +84,7 @@ export async function exportPoem(poemId: string): Promise<LibraryExportData> {
 export async function exportStory(storyId: string): Promise<LibraryExportData> {
   const story = await db.stories.get(storyId)
   if (!story) throw new Error('Story not found')
-  // Snapshots are shared with poems (see db/snapshots.ts) — its poemId
+  // Snapshots are shared with poems (see db/snapshots.ts) â€” its poemId
   // field is just an opaque document id, reused for story ids too.
   const snapshots = await db.snapshots.where('poemId').equals(storyId).toArray()
   const collections = await db.collections
@@ -102,10 +121,11 @@ export interface ImportResult {
   customFormsAdded: number
   wordOverridesAdded: number
   snapshotsAdded: number
+  projectsAdded: number
 }
 
 /**
- * Imports data alongside whatever's already in the library — nothing
+ * Imports data alongside whatever's already in the library â€” nothing
  * existing is ever overwritten. An id that collides with an existing
  * record gets a fresh id instead (treated as a duplicate/copy), with
  * cross-references (poem/story -> collection, snapshot -> poem/story)
@@ -126,10 +146,19 @@ export async function importLibrary(input: unknown): Promise<ImportResult> {
   let customFormsAdded = 0
   let wordOverridesAdded = 0
   let snapshotsAdded = 0
+  let projectsAdded = 0
 
   await db.transaction(
     'rw',
-    [db.poems, db.stories, db.snapshots, db.wordOverrides, db.customForms, db.collections],
+    [
+      db.poems,
+      db.stories,
+      db.snapshots,
+      db.wordOverrides,
+      db.customForms,
+      db.collections,
+      db.projects,
+    ],
     async () => {
       for (const collection of data.collections) {
         const existing = await db.collections.get(collection.id)
@@ -155,6 +184,17 @@ export async function importLibrary(input: unknown): Promise<ImportResult> {
         customFormsAdded++
       }
 
+      // Resolve every document id before references: an Idea may appear after its developed writing.
+      const existingIds = new Set([
+        ...(await db.poems.toCollection().primaryKeys()),
+        ...(await db.stories.toCollection().primaryKeys()),
+      ])
+      for (const doc of data.poems)
+        if (existingIds.has(doc.id)) poemIdRemap.set(doc.id, crypto.randomUUID())
+      for (const doc of data.stories)
+        if (existingIds.has(doc.id)) storyIdRemap.set(doc.id, crypto.randomUUID())
+      const remapDocument = (id: string) => poemIdRemap.get(id) ?? storyIdRemap.get(id) ?? id
+
       for (const rawPoem of data.poems) {
         const poem = {
           ...rawPoem,
@@ -166,14 +206,12 @@ export async function importLibrary(input: unknown): Promise<ImportResult> {
         const remappedCollectionIds = (poem.collectionIds ?? []).map(
           (cid) => collectionIdRemap.get(cid) ?? cid,
         )
-        const existing = (await db.poems.get(poem.id)) ?? (await db.stories.get(poem.id))
-        if (existing) {
-          const newId = crypto.randomUUID()
-          poemIdRemap.set(poem.id, newId)
-          await db.poems.add({ ...poem, id: newId, collectionIds: remappedCollectionIds })
-        } else {
-          await db.poems.add({ ...poem, collectionIds: remappedCollectionIds })
-        }
+        await db.poems.add({
+          ...poem,
+          id: remapDocument(poem.id),
+          sourceIdeaId: poem.sourceIdeaId ? remapDocument(poem.sourceIdeaId) : undefined,
+          collectionIds: remappedCollectionIds,
+        })
         poemsAdded++
       }
 
@@ -182,16 +220,26 @@ export async function importLibrary(input: unknown): Promise<ImportResult> {
         const remappedCollectionIds = (story.collectionIds ?? []).map(
           (cid) => collectionIdRemap.get(cid) ?? cid,
         )
-        const existing = (await db.stories.get(story.id)) ?? (await db.poems.get(story.id))
-        if (existing) {
-          const newId = crypto.randomUUID()
-          storyIdRemap.set(story.id, newId)
-          await db.stories.add({ ...story, id: newId, collectionIds: remappedCollectionIds })
-        } else {
-          await db.stories.add({ ...story, collectionIds: remappedCollectionIds })
-        }
+        await db.stories.add({
+          ...story,
+          id: remapDocument(story.id),
+          sourceIdeaId: story.sourceIdeaId ? remapDocument(story.sourceIdeaId) : undefined,
+          collectionIds: remappedCollectionIds,
+        })
         if (story.kind === 'idea') ideasAdded++
         else storiesAdded++
+      }
+
+      for (const project of data.projects ?? []) {
+        await db.projects.add({
+          ...project,
+          id: (await db.projects.get(project.id)) ? crypto.randomUUID() : project.id,
+          items: project.items.map((item) => ({
+            ...item,
+            documentId: remapDocument(item.documentId),
+          })),
+        })
+        projectsAdded++
       }
 
       for (const snapshot of data.snapshots) {
@@ -219,5 +267,6 @@ export async function importLibrary(input: unknown): Promise<ImportResult> {
     customFormsAdded,
     wordOverridesAdded,
     snapshotsAdded,
+    projectsAdded,
   }
 }

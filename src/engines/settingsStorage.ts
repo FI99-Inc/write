@@ -5,18 +5,35 @@ import {
   type AppSettings,
 } from '@/types/settings'
 
+import { isAppearance } from '@/features/workspace/appearance'
+
 const STORAGE_KEY = 'sonnet5-settings'
 
 export function loadSettings(): AppSettings {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ?? '{}',
+    )
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
       return { ...DEFAULT_SETTINGS }
     const values = parsed as Record<string, unknown>
     const settings = { ...DEFAULT_SETTINGS }
-    if (values.theme === 'light' || values.theme === 'dark') settings.theme = values.theme
+    if (isAppearance(values.theme)) settings.theme = values.theme
+    if (
+      values.workspaceMode === 'quiet' ||
+      values.workspaceMode === 'workspace'
+    )
+      settings.workspaceMode = values.workspaceMode
+    for (const key of ['projectPanelOpen', 'toolsPanelOpen'] as const)
+      if (typeof values[key] === 'boolean') settings[key] = values[key]
     if (values.editorFont === 'serif' || values.editorFont === 'sans')
       settings.editorFont = values.editorFont
+    if (
+      values.writingWidth === 'narrow' ||
+      values.writingWidth === 'comfortable' ||
+      values.writingWidth === 'wide'
+    )
+      settings.writingWidth = values.writingWidth
     if (values.storyEditorMode === 'rich' || values.storyEditorMode === 'plain')
       settings.storyEditorMode = values.storyEditorMode
     for (const key of ['aiEnabled', 'onlineExtrasEnabled'] as const)

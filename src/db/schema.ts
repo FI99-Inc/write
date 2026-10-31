@@ -5,6 +5,7 @@ import type { WordOverride } from '@/types/override'
 import type { Snapshot } from '@/types/snapshot'
 import type { FormTemplate } from '@/types/form'
 import type { Collection } from '@/types/collection'
+import type { Project } from '@/types/project'
 
 export class Sonnet5DB extends Dexie {
   poems!: EntityTable<Poem, 'id'>
@@ -13,6 +14,9 @@ export class Sonnet5DB extends Dexie {
   snapshots!: EntityTable<Snapshot, 'id'>
   customForms!: EntityTable<FormTemplate, 'id'>
   collections!: EntityTable<Collection, 'id'>
+
+  projects!: EntityTable<Project, 'id'>
+  backupPreferences!: EntityTable<{ id: string; value: unknown }, 'id'>
 
   constructor(name = 'sonnet5') {
     super(name)
@@ -70,6 +74,7 @@ export class Sonnet5DB extends Dexie {
       stories:
         'id, title, createdAt, modifiedAt, deletedAt, kind, status, favorite, *tags, *collectionIds',
     })
+    this.version(9).stores({ projects: 'id, name, modifiedAt', backupPreferences: 'id' })
   }
 }
 

@@ -1,6 +1,12 @@
+import type { Appearance } from '@/features/workspace/appearance'
+
 export interface AppSettings {
-  theme: 'light' | 'dark'
+  theme: Appearance
+  workspaceMode: 'quiet' | 'workspace'
+  projectPanelOpen: boolean
+  toolsPanelOpen: boolean
   editorFont: 'serif' | 'sans'
+  writingWidth: 'narrow' | 'comfortable' | 'wide'
   fontSize: number
   lineHeight: number
   /** Off by default — the app is fully offline-capable without this. When
@@ -21,10 +27,14 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'light',
+  theme: 'olive',
+  workspaceMode: 'workspace',
+  projectPanelOpen: true,
+  toolsPanelOpen: true,
   editorFont: 'serif',
-  fontSize: 18,
-  lineHeight: 32,
+  writingWidth: 'comfortable',
+  fontSize: 20,
+  lineHeight: 36,
   aiEnabled: false,
   ollamaEndpoint: 'http://localhost:11434',
   ollamaModel: '',

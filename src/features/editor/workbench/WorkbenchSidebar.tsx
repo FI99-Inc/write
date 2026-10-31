@@ -1,3 +1,4 @@
+import { useSettings } from '@/engines/useSettings'
 import { useRecentWords } from '@/engines/useRecentWords'
 import { useState } from 'react'
 import { RhymesTab } from '@/features/editor/workbench/RhymesTab'
@@ -52,14 +53,16 @@ export function WorkbenchSidebar({
   hidden,
   onClose,
 }: WorkbenchSidebarProps) {
-  const [tab, setTab] = useState<TabId>('rhymes')
+  const { settings } = useSettings()
+  const [choice, setTab] = useState<TabId>('rhymes')
+  const tab = choice === 'ai' && !settings.aiEnabled ? 'rhymes' : choice
   const recent = useRecentWords(activeWord)
 
   const word = activeWord ?? ''
 
   return (
     <WorkbenchPanel
-      tabs={TABS}
+      tabs={TABS.filter((tab) => tab.id !== 'ai' || settings.aiEnabled)}
       activeTab={tab}
       onTabChange={(id) => setTab(id as TabId)}
       hidden={hidden}

@@ -11,6 +11,7 @@ import { downloadJson } from '@/features/library/downloadJson'
 
 function describeImport(result: ImportResult): string {
   const items: [number, string, string][] = [
+    [result.projectsAdded, 'project', 'projects'],
     [result.poemsAdded, 'poem', 'poems'],
     [result.storiesAdded, 'story', 'stories'],
     [result.ideasAdded, 'idea', 'ideas'],
@@ -123,7 +124,9 @@ export function ImportExportPanel() {
           >
             <p className="font-display text-lg text-ink">Import this library file?</p>
             <p className="mt-2 text-ink/60">
-              This will add {pendingImport.poems.length} poem
+              This will add {(pendingImport.projects ?? []).length} project
+              {(pendingImport.projects ?? []).length === 1 ? '' : 's'}, {pendingImport.poems.length}{' '}
+              poem
               {pendingImport.poems.length === 1 ? '' : 's'},{' '}
               {pendingImport.stories.filter((doc) => doc.kind !== 'idea').length} stories,{' '}
               {pendingImport.stories.filter((doc) => doc.kind === 'idea').length} ideas,{' '}

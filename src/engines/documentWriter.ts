@@ -79,5 +79,6 @@ export function createDocumentWriter<T>(
     },
     flush,
     preserve,
+    hasPending: () => latest !== null,
   }
 }

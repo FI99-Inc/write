@@ -29,3 +29,7 @@ scripts/raw
 *.njsproj
 *.sln
 *.sw?
+
+# Browser verification artifacts
+/playwright-report/
+/test-results/

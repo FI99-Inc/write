@@ -48,5 +48,15 @@ export function useDocumentSave<T extends object>(
       void writer.flush()
     }
   }, [writer])
-  return { state, flush: useCallback(() => writer.flush(), [writer]) }
+  return {
+    state,
+    flush: useCallback(() => writer.flush(), [writer]),
+    flushRequired: useCallback(async () => {
+      await writer.flush()
+      if (writer.hasPending())
+        throw new Error(
+          'Save this writing successfully before continuing. Your draft is still available here.',
+        )
+    }, [writer]),
+  }
 }

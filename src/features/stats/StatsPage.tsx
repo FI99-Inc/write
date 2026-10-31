@@ -1,6 +1,6 @@
+import { AppHeader } from '@/features/workspace/AppHeader'
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Link } from 'react-router-dom'
 import { useToday } from '@/engines/useToday'
 import { listDocuments } from '@/db/documents'
 import { db } from '@/db/schema'
@@ -24,7 +24,8 @@ export function StatsPage() {
     const active = new Set((await listDocuments()).map((doc) => doc.id))
     const dates: { createdAt: number }[] = []
     await db.snapshots.each((snapshot) => {
-      if (active.has(snapshot.poemId)) dates.push({ createdAt: snapshot.createdAt })
+      if (active.has(snapshot.poemId))
+        dates.push({ createdAt: snapshot.createdAt })
     })
     return dates
   }, [])
@@ -33,7 +34,9 @@ export function StatsPage() {
   const stats = useMemo(() => {
     if (!documents || !snapshots) return null
     const poems = documents.filter((doc) => doc.kind === 'poem')
-    const heatmap = computeActivityHeatmap(collectActivityTimestamps(documents, snapshots))
+    const heatmap = computeActivityHeatmap(
+      collectActivityTimestamps(documents, snapshots),
+    )
     return {
       byStatus: countByStatus(documents),
       byForm: countByForm(poems),
@@ -55,11 +58,11 @@ export function StatsPage() {
 
   return (
     <div className="min-h-full bg-canvas">
+      <AppHeader />
       <header className="flex items-center gap-4 border-b border-canvas-line px-4 py-4 sm:gap-5 sm:px-8 sm:py-6">
-        <Link to="/" className="text-sm text-ink/50 hover:text-indigo">
-          ← Library
-        </Link>
-        <h1 className="font-display text-xl tracking-tight text-ink sm:text-2xl">Stats</h1>
+        <h1 className="font-display text-xl tracking-tight text-ink sm:text-2xl">
+          Stats
+        </h1>
       </header>
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:space-y-10 sm:px-8 sm:py-10">
@@ -91,7 +94,9 @@ export function StatsPage() {
                   <p className="text-xs font-medium uppercase tracking-wide text-ink/40">
                     {status}
                   </p>
-                  <p className="font-display text-2xl text-ink">{stats.byStatus[status]}</p>
+                  <p className="font-display text-2xl text-ink">
+                    {stats.byStatus[status]}
+                  </p>
                 </div>
               ))}
             </section>
@@ -104,7 +109,10 @@ export function StatsPage() {
                 {Array.from(stats.byForm.entries())
                   .sort((a, b) => b[1] - a[1])
                   .map(([formId, count]) => (
-                    <li key={formId} className="flex justify-between text-ink/70">
+                    <li
+                      key={formId}
+                      className="flex justify-between text-ink/70"
+                    >
                       <span>{formName(formId)}</span>
                       <span className="text-ink/40">{count}</span>
                     </li>
@@ -117,7 +125,9 @@ export function StatsPage() {
                 Most-used words (stopwords excluded)
               </p>
               {stats.topWords.length === 0 ? (
-                <p className="text-sm text-ink/40">Write a bit more to see your most-used words.</p>
+                <p className="text-sm text-ink/40">
+                  Write a bit more to see your most-used words.
+                </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {stats.topWords.map(({ word, count }) => (

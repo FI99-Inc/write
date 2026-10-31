@@ -16,7 +16,9 @@ import { usePrinting } from '@/engines/usePrinting'
 import { useDocumentSave } from '@/engines/useDocumentSave'
 import { readRecovery } from '@/engines/documentWriter'
 import { SaveStatus } from '@/features/editor/SaveStatus'
+import { CheckpointButton } from '@/features/editor/CheckpointButton'
 import { createSnapshot } from '@/db/snapshots'
+import { useSettings } from '@/engines/useSettings'
 import { useDictionary } from '@/engines/useDictionary'
 import {
   countLineSyllables,
@@ -37,12 +39,17 @@ import { TargetMeterSelector } from '@/features/editor/TargetMeterSelector'
 import { FocusOverlay } from '@/features/editor/FocusOverlay'
 import { WordInspectorPopover } from '@/features/editor/WordInspectorPopover'
 import { WorkbenchSidebar } from '@/features/editor/workbench/WorkbenchSidebar'
+import { FindReplacePanel } from '@/features/editor/FindReplacePanel'
 import { SettingsPanel } from '@/features/settings/SettingsPanel'
 import { ExportMenu } from '@/features/editor/ExportMenu'
 import { PrintablePoem } from '@/features/editor/PrintablePoem'
 import { useEditorMetrics, toolbarPill } from '@/features/editor/editorLayout'
 import { useRegisterCommands, type Command } from '@/engines/useCommandPalette'
-import { isDesktopViewport } from '@/engines/viewport'
+import { DocumentTitle } from '@/features/workspace/DocumentTitle'
+import {
+  WritingWorkspace,
+  DocumentLabel,
+} from '@/features/workspace/WritingWorkspace'
 
 type OverlayMode = 'none' | 'rhymes' | 'scansion'
 
@@ -79,6 +86,7 @@ function PoemWriting({ poem }: { poem: Poem }) {
   const id = poem.id
   const navigate = useNavigate()
   const printing = usePrinting()
+  const { settings } = useSettings()
   const {
     dict,
     overrides,
@@ -90,7 +98,10 @@ function PoemWriting({ poem }: { poem: Poem }) {
   const clearBandPadding = lineHeight * 0.75
 
   const [recovery] = useState(() =>
-    readRecovery<{ title: string; body: string }>(poem.id, poem.draftSavedAt ?? poem.modifiedAt),
+    readRecovery<{ title: string; body: string }>(
+      poem.id,
+      poem.draftSavedAt ?? poem.modifiedAt,
+    ),
   )
   const [title, setTitle] = useState(recovery?.title ?? poem.title)
   const [body, setBody] = useState(recovery?.body ?? poem.body)
@@ -101,14 +112,14 @@ function PoemWriting({ poem }: { poem: Poem }) {
   const backdropRef = useRef<HTMLDivElement>(null)
 
   const [focusMode, setFocusMode] = useState(false)
-  // On a phone the workbench is a sheet over the poem, so it starts closed —
-  // opening straight into it would bury the thing you came here to write.
-  const [panelOpen, setPanelOpen] = useState(isDesktopViewport)
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('none')
   const [currentLine, setCurrentLine] = useState(0)
   const [overlayWindow, setOverlayWindow] = useState({ top: 0, bottom: 0 })
-  const [snapshotSaved, setSnapshotSaved] = useState(false)
-  const [inspector, setInspector] = useState<{ word: string; x: number; y: number } | null>(null)
+  const [inspector, setInspector] = useState<{
+    word: string
+    x: number
+    y: number
+  } | null>(null)
 
   const draft = useMemo(() => ({ title, body }), [title, body])
   const saving = useDocumentSave(id, draft, updatePoem, {
@@ -128,22 +139,36 @@ function PoemWriting({ poem }: { poem: Poem }) {
       ),
     [dict, overrides],
   )
-  const syllableCounts = useMemo(() => analyzeSyllables(lines), [lines, analyzeSyllables])
+  const syllableCounts = useMemo(
+    () => analyzeSyllables(lines),
+    [lines, analyzeSyllables],
+  )
 
   const rhymeOverrideEntries = useMemo(
-    () => new Map(Object.entries(poem?.rhymeOverrides ?? {}).map(([k, v]) => [Number(k), v])),
+    () =>
+      new Map(
+        Object.entries(poem?.rhymeOverrides ?? {}).map(([k, v]) => [
+          Number(k),
+          v,
+        ]),
+      ),
     [poem?.rhymeOverrides],
   )
   const rhymeScheme = useMemo(() => {
     if (!dict) return null
-    return applyRhymeOverrides(computeRhymeScheme(body, dict), rhymeOverrideEntries)
+    return applyRhymeOverrides(
+      computeRhymeScheme(body, dict),
+      rhymeOverrideEntries,
+    )
   }, [body, dict, rhymeOverrideEntries])
 
   const wordCount = useMemo(() => countWords(body), [body])
   const lineCount = useMemo(() => countLines(body), [body])
   const stanzaCount = useMemo(() => countStanzas(body), [body])
   const poemWords = useMemo(() => new Set(extractWords(body)), [body])
-  const activeWord = lines[currentLine] ? (extractWords(lines[currentLine]).at(-1) ?? null) : null
+  const activeWord = lines[currentLine]
+    ? (extractWords(lines[currentLine]).at(-1) ?? null)
+    : null
 
   const syncSideColumns = useCallback(() => {
     const scrollTop = textareaRef.current?.scrollTop ?? 0
@@ -168,11 +193,13 @@ function PoemWriting({ poem }: { poem: Poem }) {
   function recomputeOverlayWindow(lineIndex: number) {
     const textarea = textareaRef.current
     if (!textarea) return
-    const lineTopInViewport = topPadding + lineIndex * lineHeight - textarea.scrollTop
+    const lineTopInViewport =
+      topPadding + lineIndex * lineHeight - textarea.scrollTop
     const top = Math.max(0, lineTopInViewport - clearBandPadding)
     const bottom = Math.max(
       0,
-      textarea.clientHeight - (lineTopInViewport + lineHeight + clearBandPadding),
+      textarea.clientHeight -
+        (lineTopInViewport + lineHeight + clearBandPadding),
     )
     setOverlayWindow({ top, bottom })
   }
@@ -203,19 +230,23 @@ function PoemWriting({ poem }: { poem: Poem }) {
     const textarea = textareaRef.current
     if (!textarea) return
     const target =
-      topPadding + currentLine * lineHeight - textarea.clientHeight / 2 + lineHeight / 2
+      topPadding +
+      currentLine * lineHeight -
+      textarea.clientHeight / 2 +
+      lineHeight / 2
     textarea.scrollTop = Math.max(0, target)
     syncSideColumns()
     recomputeOverlayWindow(currentLine)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusMode, currentLine])
 
-  const handleSnapshot = useCallback(async () => {
-    if (!id) return
-    await createSnapshot(id, title, body)
-    setSnapshotSaved(true)
-    setTimeout(() => setSnapshotSaved(false), 1600)
-  }, [id, title, body])
+  const handleSnapshot = useCallback(
+    async (label?: string) => {
+      if (!id) return
+      await createSnapshot(id, title, body, label)
+    },
+    [id, title, body],
+  )
 
   function handlePinRhyme(lineIndex: number, label: string | null) {
     if (!id) return
@@ -236,22 +267,26 @@ function PoemWriting({ poem }: { poem: Poem }) {
     toggleSyllableState.current = { id, dict, lines, overrides, poem }
   })
 
-  const handleToggleSyllable = useCallback((lineIndex: number, syllableIndex: number) => {
-    const { id, dict, lines, overrides, poem } = toggleSyllableState.current
-    if (!id || !dict) return
-    const key = `${lineIndex}-${syllableIndex}`
-    const line = lines[lineIndex]
-    const raw = stressSequence(scanLine(line, dict, overrides))
-    const lineOverridesMap = new Map<number, 0 | 1>(
-      Object.entries(poem?.scansionOverrides ?? {})
-        .filter(([k]) => k.startsWith(`${lineIndex}-`))
-        .map(([k, v]) => [Number(k.slice(`${lineIndex}-`.length)), v]),
-    )
-    const currentStress = lineOverridesMap.get(syllableIndex) ?? raw[syllableIndex]
-    const next = { ...(poem?.scansionOverrides ?? {}) }
-    next[key] = currentStress === 1 ? 0 : 1
-    void updatePoem(id, { scansionOverrides: next })
-  }, [])
+  const handleToggleSyllable = useCallback(
+    (lineIndex: number, syllableIndex: number) => {
+      const { id, dict, lines, overrides, poem } = toggleSyllableState.current
+      if (!id || !dict) return
+      const key = `${lineIndex}-${syllableIndex}`
+      const line = lines[lineIndex]
+      const raw = stressSequence(scanLine(line, dict, overrides))
+      const lineOverridesMap = new Map<number, 0 | 1>(
+        Object.entries(poem?.scansionOverrides ?? {})
+          .filter(([k]) => k.startsWith(`${lineIndex}-`))
+          .map(([k, v]) => [Number(k.slice(`${lineIndex}-`.length)), v]),
+      )
+      const currentStress =
+        lineOverridesMap.get(syllableIndex) ?? raw[syllableIndex]
+      const next = { ...(poem?.scansionOverrides ?? {}) }
+      next[key] = currentStress === 1 ? 0 : 1
+      void updatePoem(id, { scansionOverrides: next })
+    },
+    [],
+  )
 
   function handleTargetMeterChange(value: { foot: Foot; feet: number } | null) {
     if (!id) return
@@ -287,20 +322,29 @@ function PoemWriting({ poem }: { poem: Poem }) {
     return [
       {
         id: 'toggle-rhyme-colors',
-        label: overlayMode === 'rhymes' ? 'Turn off rhyme colors' : 'Turn on rhyme colors',
+        label:
+          overlayMode === 'rhymes'
+            ? 'Turn off rhyme colors'
+            : 'Turn on rhyme colors',
         run: () => setOverlayMode((m) => (m === 'rhymes' ? 'none' : 'rhymes')),
       },
       {
         id: 'toggle-scansion',
-        label: overlayMode === 'scansion' ? 'Turn off scansion' : 'Turn on scansion',
-        run: () => setOverlayMode((m) => (m === 'scansion' ? 'none' : 'scansion')),
+        label:
+          overlayMode === 'scansion' ? 'Turn off scansion' : 'Turn on scansion',
+        run: () =>
+          setOverlayMode((m) => (m === 'scansion' ? 'none' : 'scansion')),
       },
       {
         id: 'toggle-focus',
         label: focusMode ? 'Exit focus mode' : 'Enter focus mode',
         run: () => setFocusMode((v) => !v),
       },
-      { id: 'snapshot', label: 'Save snapshot', run: () => void handleSnapshot() },
+      {
+        id: 'snapshot',
+        label: 'Save snapshot',
+        run: () => void handleSnapshot(),
+      },
       {
         id: 'go-history',
         label: 'View version history',
@@ -315,192 +359,84 @@ function PoemWriting({ poem }: { poem: Poem }) {
 
   return (
     <>
-      <div className="flex h-full flex-col bg-canvas print:hidden">
-        <header className="flex items-center gap-2 border-b border-canvas-line px-3 py-2 sm:gap-5 sm:px-8 sm:py-4">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="shrink-0 text-sm text-ink/50 transition-colors hover:text-indigo"
-          >
-            <span aria-hidden="true">←</span>
-            <span className="ml-1 hidden sm:inline">Library</span>
-            <span className="sr-only sm:hidden">Library</span>
-          </button>
-
-          {/* Below sm this strip scrolls sideways rather than wrapping, so the
-           * header stays one row tall and the poem keeps the screen. Export and
-           * Settings sit outside it — their popovers are absolutely positioned
-           * and would be clipped by the scroll container. */}
-          <div className="scroll-strip flex min-w-0 flex-1 items-center gap-2 overflow-x-auto text-xs text-ink/40 sm:justify-end sm:gap-5 sm:overflow-x-visible">
-            <span className="hidden shrink-0 sm:inline">
-              {wordCount} word{wordCount === 1 ? '' : 's'}
-            </span>
-            <span className="hidden shrink-0 sm:inline">
-              {lineCount} line{lineCount === 1 ? '' : 's'}
-            </span>
-            <span className="hidden shrink-0 sm:inline">
-              {stanzaCount} stanza{stanzaCount === 1 ? '' : 's'}
-            </span>
-            <span className="mx-1 hidden h-3 w-px shrink-0 bg-canvas-line sm:block" />
-            {overlayMode === 'scansion' && (
-              <TargetMeterSelector
-                value={poem.targetMeter ?? null}
-                onChange={handleTargetMeterChange}
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => setOverlayMode((m) => (m === 'rhymes' ? 'none' : 'rhymes'))}
-              aria-pressed={overlayMode === 'rhymes'}
-              className={toolbarPill(overlayMode === 'rhymes')}
-            >
-              Rhyme colors
-            </button>
-            <button
-              type="button"
-              onClick={() => setOverlayMode((m) => (m === 'scansion' ? 'none' : 'scansion'))}
-              aria-pressed={overlayMode === 'scansion'}
-              className={toolbarPill(overlayMode === 'scansion')}
-            >
-              Scansion
-            </button>
-            <button
-              type="button"
-              onClick={() => setFocusMode((v) => !v)}
-              aria-pressed={focusMode}
-              className={toolbarPill(focusMode)}
-            >
-              Focus
-            </button>
-            <button
-              type="button"
-              onClick={() => setPanelOpen((v) => !v)}
-              aria-pressed={panelOpen}
-              className={toolbarPill(panelOpen)}
-            >
-              Panel
-            </button>
-            <button
-              type="button"
-              onClick={handleSnapshot}
-              className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
-            >
-              {snapshotSaved ? 'Saved ✓' : 'Snapshot'}
-            </button>
-            <Link
-              to={`/poem/${id}/history`}
-              className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
-            >
-              History
-            </Link>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-3 text-xs text-ink/40 sm:gap-5">
-            <ExportMenu title={title} body={body} />
-            <SaveStatus state={saving.state} retry={() => void saving.flush()} />
-            <SettingsPanel />
-          </div>
-        </header>
-
-        {dictionaryError && (
-          <p role="alert" className="px-4 py-2 text-sm text-berry">
-            {dictionaryError}{' '}
-            <button type="button" onClick={retryDictionary} className="underline">
-              Retry
-            </button>
-          </p>
-        )}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
-            {/* A column so the writing surface can take whatever height is left
-             * over rather than stopping at its 55dvh floor with dead canvas
-             * underneath — which on a phone is most of the screen. */}
-            <div className="mx-auto flex h-full max-w-3xl flex-col">
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Untitled"
-                aria-label="Poem title"
-                className="w-full bg-transparent font-display text-2xl text-ink outline-none placeholder:text-ink/30 sm:text-3xl"
-              />
-
-              {/* The counts live in the header on wider screens; on a phone
-               * they'd crowd out the toggles, so they read out here instead. */}
-              <p className="mt-1 text-xs text-ink/40 sm:hidden">
-                {wordCount} word{wordCount === 1 ? '' : 's'} · {lineCount} line
-                {lineCount === 1 ? '' : 's'} · {stanzaCount} stanza{stanzaCount === 1 ? '' : 's'}
-              </p>
-
-              <div className="mt-6 flex min-h-[55dvh] flex-1 sm:mt-8">
-                <SyllableGutter
-                  lines={lines}
-                  counts={syllableCounts}
-                  loading={dictLoading}
-                  gutterRef={gutterRef}
+      <WritingWorkspace
+        documentId={id}
+        actions={
+          <>
+            <div className="wr-action-group">
+              {overlayMode === 'scansion' && (
+                <TargetMeterSelector
+                  value={poem.targetMeter ?? null}
+                  onChange={handleTargetMeterChange}
                 />
-                <div className="relative min-w-0 flex-1">
-                  {focusMode && (
-                    <FocusOverlay
-                      topHeight={overlayWindow.top}
-                      bottomHeight={overlayWindow.bottom}
-                    />
-                  )}
-                  {overlayMode === 'rhymes' && rhymeScheme && (
-                    <RhymeHighlightBackdrop
-                      lines={lines}
-                      rhymeScheme={rhymeScheme}
-                      backdropRef={backdropRef}
-                    />
-                  )}
-                  {overlayMode === 'scansion' && dict && (
-                    <ScansionOverlay
-                      lines={lines}
-                      dict={dict}
-                      wordOverrides={overrides}
-                      scansionOverrides={poem.scansionOverrides ?? EMPTY_SCANSION_OVERRIDES}
-                      targetMeter={poem.targetMeter ?? null}
-                      onToggleSyllable={handleToggleSyllable}
-                      backdropRef={backdropRef}
-                    />
-                  )}
-                  <textarea
-                    ref={textareaRef}
-                    value={body}
-                    onChange={(event) => setBody(event.target.value)}
-                    onScroll={handleScroll}
-                    onSelect={handleSelectionChange}
-                    onClick={handleTextareaClick}
-                    onKeyUp={handleSelectionChange}
-                    placeholder="Begin…"
-                    aria-label="Poem text"
-                    spellCheck={false}
-                    className="h-full min-h-[55dvh] w-full resize-none overflow-auto whitespace-pre bg-transparent pl-3 outline-none placeholder:text-ink/30 sm:pl-6"
-                    style={{
-                      fontSize,
-                      lineHeight: `${lineHeight}px`,
-                      fontFamily,
-                      paddingTop: topPadding,
-                      color:
-                        (overlayMode === 'rhymes' && rhymeScheme) ||
-                        (overlayMode === 'scansion' && dict)
-                          ? 'transparent'
-                          : 'var(--color-ink)',
-                      caretColor: 'var(--color-ink)',
-                    }}
-                  />
-                </div>
-                {rhymeScheme && (
-                  <RhymeColumn
-                    lines={rhymeScheme}
-                    isOverridden={(i) => rhymeOverrideEntries.has(i)}
-                    onPin={handlePinRhyme}
-                    gutterRef={rhymeColumnRef}
-                  />
-                )}
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={() =>
+                  setOverlayMode((m) => (m === 'rhymes' ? 'none' : 'rhymes'))
+                }
+                aria-pressed={overlayMode === 'rhymes'}
+                className={toolbarPill(overlayMode === 'rhymes')}
+              >
+                Rhyme colors
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setOverlayMode((m) =>
+                    m === 'scansion' ? 'none' : 'scansion',
+                  )
+                }
+                aria-pressed={overlayMode === 'scansion'}
+                className={toolbarPill(overlayMode === 'scansion')}
+              >
+                Scansion
+              </button>
+              <button
+                type="button"
+                onClick={() => setFocusMode((v) => !v)}
+                aria-pressed={focusMode}
+                className={toolbarPill(focusMode)}
+              >
+                Focus
+              </button>
+              <CheckpointButton save={handleSnapshot} />
+              <Link
+                to={`/poem/${id}/history`}
+                className="shrink-0 whitespace-nowrap py-1.5 text-ink/50 hover:text-indigo sm:py-0"
+              >
+                History
+              </Link>
             </div>
-          </main>
 
+            <div className="wr-action-group">
+              <ExportMenu title={title} body={body} />
+              <SettingsPanel compact />
+            </div>
+          </>
+        }
+        before={
+          <>
+            <FindReplacePanel
+              body={body}
+              onChange={setBody}
+              getTextarea={() => textareaRef.current}
+            />
+            {dictionaryError && (
+              <p role="alert" className="px-4 py-2 text-sm text-berry">
+                {dictionaryError}{' '}
+                <button
+                  type="button"
+                  onClick={retryDictionary}
+                  className="underline"
+                >
+                  Retry
+                </button>
+              </p>
+            )}
+          </>
+        }
+        tools={(hidden, close) => (
           <WorkbenchSidebar
             activeWord={activeWord}
             poemWords={poemWords}
@@ -510,11 +446,111 @@ function PoemWriting({ poem }: { poem: Poem }) {
             onFormChange={handleFormChange}
             onAcrosticWordChange={handleAcrosticWordChange}
             onInsert={insertAtCursor}
-            hidden={!panelOpen}
-            onClose={() => setPanelOpen(false)}
+            hidden={hidden}
+            onClose={close}
           />
-        </div>
+        )}
+      >
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
+          {/* A column so the writing surface can take whatever height is left
+           * over rather than stopping at its 55dvh floor with dead canvas
+           * underneath — which on a phone is most of the screen. */}
+          <div
+            className={`writing-column writing-width-${settings.writingWidth} flex h-full flex-col`}
+          >
+            <DocumentLabel
+              kind="poem"
+              status={poem.status}
+              sourceIdeaId={poem.sourceIdeaId}
+            >
+              <SaveStatus
+                state={saving.state}
+                retry={() => void saving.flush()}
+              />
+            </DocumentLabel>
+            <DocumentTitle
+              title={title}
+              onChange={setTitle}
+              label="Poem title"
+            />
 
+            <p className="wr-document-counts">
+              {wordCount} word{wordCount === 1 ? '' : 's'} · {lineCount} line
+              {lineCount === 1 ? '' : 's'} · {stanzaCount} stanza
+              {stanzaCount === 1 ? '' : 's'}
+            </p>
+
+            <div className="mt-6 flex min-h-[55dvh] flex-1 sm:mt-8">
+              <SyllableGutter
+                lines={lines}
+                counts={syllableCounts}
+                loading={dictLoading}
+                gutterRef={gutterRef}
+              />
+              <div className="relative min-w-0 flex-1">
+                {focusMode && (
+                  <FocusOverlay
+                    topHeight={overlayWindow.top}
+                    bottomHeight={overlayWindow.bottom}
+                  />
+                )}
+                {overlayMode === 'rhymes' && rhymeScheme && (
+                  <RhymeHighlightBackdrop
+                    lines={lines}
+                    rhymeScheme={rhymeScheme}
+                    backdropRef={backdropRef}
+                  />
+                )}
+                {overlayMode === 'scansion' && dict && (
+                  <ScansionOverlay
+                    lines={lines}
+                    dict={dict}
+                    wordOverrides={overrides}
+                    scansionOverrides={
+                      poem.scansionOverrides ?? EMPTY_SCANSION_OVERRIDES
+                    }
+                    targetMeter={poem.targetMeter ?? null}
+                    onToggleSyllable={handleToggleSyllable}
+                    backdropRef={backdropRef}
+                  />
+                )}
+                <textarea
+                  ref={textareaRef}
+                  value={body}
+                  onChange={(event) => setBody(event.target.value)}
+                  onScroll={handleScroll}
+                  onSelect={handleSelectionChange}
+                  onClick={handleTextareaClick}
+                  onKeyUp={handleSelectionChange}
+                  placeholder="Begin…"
+                  aria-label="Poem text"
+                  spellCheck={false}
+                  className="h-full min-h-[55dvh] w-full resize-none overflow-auto whitespace-pre bg-transparent pl-3 outline-none placeholder:text-ink/30 sm:pl-6"
+                  style={{
+                    fontSize,
+                    lineHeight: `${lineHeight}px`,
+                    fontFamily,
+                    paddingTop: topPadding,
+                    color:
+                      (overlayMode === 'rhymes' && rhymeScheme) ||
+                      (overlayMode === 'scansion' && dict)
+                        ? 'transparent'
+                        : 'var(--color-ink)',
+                    caretColor: 'var(--color-ink)',
+                  }}
+                />
+              </div>
+              {rhymeScheme && (
+                <RhymeColumn
+                  lines={rhymeScheme}
+                  isOverridden={(i) => rhymeOverrideEntries.has(i)}
+                  onPin={handlePinRhyme}
+                  gutterRef={rhymeColumnRef}
+                />
+              )}
+            </div>
+          </div>
+        </main>
         {inspector && (
           <WordInspectorPopover
             word={inspector.word}
@@ -523,7 +559,7 @@ function PoemWriting({ poem }: { poem: Poem }) {
             onClose={() => setInspector(null)}
           />
         )}
-      </div>
+      </WritingWorkspace>
       {printing && <PrintablePoem title={title} body={body} />}
     </>
   )

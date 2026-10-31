@@ -1,5 +1,7 @@
 export interface Poem {
   id: string
+  /** The original Idea remains available with its comments and versions. */
+  sourceIdeaId?: string
   title: string
   /** Raw text: newline-separated lines, a blank line starts a new stanza. */
   body: string

@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { PoemStatus } from '@/types/poem'
 import { POEM_STATUSES } from '@/types/poem'
 import type { Collection } from '@/types/collection'
@@ -40,12 +42,19 @@ export function LibraryToolbar({
   viewMode,
   onViewModeChange,
 }: LibraryToolbarProps) {
+  const search = useRef<HTMLInputElement>(null)
+  const location = useLocation()
+  useEffect(() => {
+    if (new URLSearchParams(location.search).has('find'))
+      search.current?.focus()
+  }, [location.search])
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-canvas-line px-4 py-3 text-sm sm:gap-3 sm:px-8">
       {/* Full width below sm so search gets its own row and the filters wrap
        * underneath it, rather than everything fighting over 360px. */}
       <input
         aria-label="Search library"
+        ref={search}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search your library…"
@@ -60,10 +69,18 @@ export function LibraryToolbar({
             onClick={() => onKindChange(k)}
             aria-pressed={kind === k}
             className={`rounded-full px-3 py-1.5 text-xs sm:py-1 ${
-              kind === k ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
+              kind === k
+                ? 'bg-indigo text-paper'
+                : 'text-ink/50 hover:text-indigo'
             }`}
           >
-            {k === 'poem' ? 'Poems' : k === 'story' ? 'Stories' : k === 'idea' ? 'Ideas' : 'All'}
+            {k === 'poem'
+              ? 'Poems'
+              : k === 'story'
+                ? 'Stories'
+                : k === 'idea'
+                  ? 'Ideas'
+                  : 'All'}
           </button>
         ))}
       </div>
@@ -71,7 +88,9 @@ export function LibraryToolbar({
       <select
         aria-label="Filter by status"
         value={status ?? ''}
-        onChange={(e) => onStatusChange((e.target.value || null) as PoemStatus | null)}
+        onChange={(e) =>
+          onStatusChange((e.target.value || null) as PoemStatus | null)
+        }
         className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
       >
         <option value="">Any status</option>
