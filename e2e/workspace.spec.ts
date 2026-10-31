@@ -431,7 +431,9 @@ test('plain writing preserves Enter, multiline paste, undo, line navigation, and
   await page.getByRole('button', { name: 'Find / replace', exact: true }).click()
   await page.getByRole('spinbutton', { name: 'Jump to line', exact: true }).fill('5')
   await page.getByRole('button', { name: 'Go to line', exact: true }).click()
-  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('Third')
+  // TipTap applies DOM focus on the next animation frame.
+  await expect(surface).toBeFocused()
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe('Third')
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible()
   await page.getByRole('link', { name: 'Library', exact: true }).click()
   await page.goto(url)

@@ -234,7 +234,10 @@ function ProjectDetail({ project }: { project: Project }) {
                 kind: doc.kind,
                 role,
               })
-              setDocumentId('')
+              // A writer may already have chosen the next entry while this write was pending.
+              setDocumentId((current) =>
+                current === documentId ? '' : current,
+              )
             })
         }}
       >
