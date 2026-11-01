@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useSettings } from '@/engines/SettingsContext'
+import { useSettings } from '@/engines/useSettings'
 import { DatamuseError } from '@/engines/datamuseClient'
 
 interface OnlineExtrasSectionProps {
   word: string
   title: string
-  fetcher: (word: string) => Promise<string[]>
+  fetcher: (word: string, signal?: AbortSignal) => Promise<string[]>
   exclude: Set<string>
   onInsert: (word: string) => void
 }
@@ -13,31 +13,52 @@ interface OnlineExtrasSectionProps {
 /** Shown under a tab's offline results — a clearly-labeled, opt-in Datamuse
  * lookup (see Settings > "Online extras") for words the bundled dictionary
  * doesn't cover. Fetches nothing unless the setting is on. */
-export function OnlineExtrasSection({ word, title, fetcher, exclude, onInsert }: OnlineExtrasSectionProps) {
+export function OnlineExtrasSection({
+  word,
+  title,
+  fetcher,
+  exclude,
+  onInsert,
+}: OnlineExtrasSectionProps) {
   const { settings } = useSettings()
-  const [words, setWords] = useState<string[] | null>(null)
-  const [error, setError] = useState('')
-
+  const [result, setResult] = useState<{ word: string; words: string[] | null; error: string }>({
+    word: '',
+    words: null,
+    error: '',
+  })
   useEffect(() => {
-    if (!settings.onlineExtrasEnabled || !word) {
-      setWords(null)
-      setError('')
-      return
-    }
-    let cancelled = false
-    setWords(null)
-    setError('')
-    fetcher(word)
-      .then((result) => {
-        if (!cancelled) setWords(result)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof DatamuseError ? err.message : 'Something went wrong.')
-      })
+    if (!settings.onlineExtrasEnabled || !word) return
+    const controller = new AbortController()
+    let active = true
+    const timeout = setTimeout(() => controller.abort(), 15_000)
+    const debounce = setTimeout(() => {
+      void fetcher(word, controller.signal)
+        .then((words) => {
+          if (active) setResult({ word, words, error: '' })
+        })
+        .catch((reason) => {
+          if (active)
+            setResult({
+              word,
+              words: null,
+              error: controller.signal.aborted
+                ? 'Lookup timed out. Select the word again to retry.'
+                : reason instanceof DatamuseError
+                  ? reason.message
+                  : 'Could not complete the lookup.',
+            })
+        })
+        .finally(() => clearTimeout(timeout))
+    }, 250)
     return () => {
-      cancelled = true
+      active = false
+      clearTimeout(debounce)
+      clearTimeout(timeout)
+      controller.abort()
     }
   }, [word, settings.onlineExtrasEnabled, fetcher])
+  const words = result.word === word ? result.words : null
+  const error = result.word === word ? result.error : ''
 
   if (!settings.onlineExtrasEnabled) return null
 

@@ -20,12 +20,19 @@ export interface StoryComment {
  * library can list both side by side. */
 export interface Story {
   id: string
+  /** The original Idea remains available with its comments and versions. */
+  sourceIdeaId?: string
   title: string
   /** Plain prose text — wrapped and paginated by the browser, not rendered
    * line-by-line the way a poem's body is. */
   body: string
   createdAt: number
   modifiedAt: number
+  /** Scheduling revision of the last saved text, separate from metadata edits. */
+  draftSavedAt?: number
+  deletedAt?: number
+  /** Legacy prose records without a kind are stories. */
+  kind?: 'story' | 'idea'
   tags?: string[]
   status?: PoemStatus
   favorite?: boolean

@@ -27,7 +27,7 @@ export const storyExtensions: Extensions = [
   Color,
   Highlight.configure({ multicolor: true }),
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
-  Placeholder.configure({ placeholder: 'Once upon a time…' }),
+  Placeholder.configure({ placeholder: 'Start writing…' }),
   Comment,
 ]
 

@@ -1,10 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { fetchDatamuseRhymes, fetchDatamuseSimilarMeaning, DatamuseError } from '@/engines/datamuseClient'
+let client: typeof import('@/engines/datamuseClient')
 
 describe('datamuseClient', () => {
   const originalFetch = global.fetch
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules()
+    client = await import('@/engines/datamuseClient')
     global.fetch = vi.fn()
   })
 
@@ -18,22 +20,26 @@ describe('datamuseClient', () => {
       vi.mocked(global.fetch).mockImplementation((input) => {
         const url = String(input)
         if (url.includes('rel_rhy')) {
-          return Promise.resolve(new Response(JSON.stringify([{ word: 'moon' }, { word: 'june' }]), { status: 200 }))
+          return Promise.resolve(
+            new Response(JSON.stringify([{ word: 'moon' }, { word: 'june' }]), { status: 200 }),
+          )
         }
-        return Promise.resolve(new Response(JSON.stringify([{ word: 'june' }, { word: 'noon' }]), { status: 200 }))
+        return Promise.resolve(
+          new Response(JSON.stringify([{ word: 'june' }, { word: 'noon' }]), { status: 200 }),
+        )
       })
-      const rhymes = await fetchDatamuseRhymes('spoon')
+      const rhymes = await client.fetchDatamuseRhymes('spoon')
       expect(rhymes.sort()).toEqual(['june', 'moon', 'noon'])
     })
 
     it('throws a DatamuseError when the request fails', async () => {
       vi.mocked(global.fetch).mockRejectedValue(new TypeError('Failed to fetch'))
-      await expect(fetchDatamuseRhymes('spoon')).rejects.toBeInstanceOf(DatamuseError)
+      await expect(client.fetchDatamuseRhymes('spoon')).rejects.toBeInstanceOf(client.DatamuseError)
     })
 
     it('throws a DatamuseError on a non-ok response', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response('', { status: 500 }))
-      await expect(fetchDatamuseRhymes('spoon')).rejects.toBeInstanceOf(DatamuseError)
+      await expect(client.fetchDatamuseRhymes('spoon')).rejects.toBeInstanceOf(client.DatamuseError)
     })
   })
 
@@ -42,13 +48,13 @@ describe('datamuseClient', () => {
       vi.mocked(global.fetch).mockResolvedValue(
         new Response(JSON.stringify([{ word: 'happy' }, { word: 'joyful' }]), { status: 200 }),
       )
-      const words = await fetchDatamuseSimilarMeaning('glad')
+      const words = await client.fetchDatamuseSimilarMeaning('glad')
       expect(words).toEqual(['happy', 'joyful'])
     })
 
     it('requests the means-like endpoint with the word', async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }))
-      await fetchDatamuseSimilarMeaning('glad')
+      await client.fetchDatamuseSimilarMeaning('glad')
       expect(global.fetch).toHaveBeenCalledWith('https://api.datamuse.com/words?ml=glad&max=25')
     })
   })

@@ -4,7 +4,7 @@ import type { FormTemplate, ChecklistItem } from '@/types/form'
 import { extractWords, lastWord, firstWord } from '@/engines/normalize'
 import { countLineSyllables } from '@/engines/lineStats'
 import { scanLine, stressSequence } from '@/engines/scansion'
-import { findDeviations } from '@/engines/meter'
+import { FOOT_PATTERNS, findDeviations } from '@/engines/meter'
 import { isPerfectRhyme } from '@/engines/rhyme'
 
 /** Non-blank content lines only — what form templates index against (blank
@@ -29,6 +29,7 @@ export function validateForm(
   dict: DictionaryIndex,
   overrides?: OverrideIndex,
 ): ChecklistItem[] {
+  if (template.lineRules.length === 0) return []
   const lines = contentLines(body)
   const items: ChecklistItem[] = []
 
@@ -36,7 +37,11 @@ export function validateForm(
   // more lines than the form calls for is the one line-count case worth
   // flagging, since it means the poem has outgrown the form.
   const lineCountStatus: ChecklistItem['status'] =
-    lines.length < template.lineRules.length ? 'pending' : lines.length === template.lineRules.length ? 'pass' : 'fail'
+    lines.length < template.lineRules.length
+      ? 'pending'
+      : lines.length === template.lineRules.length
+        ? 'pass'
+        : 'fail'
   items.push({
     line: 0,
     label: `${template.lineRules.length} line${template.lineRules.length === 1 ? '' : 's'} total`,
@@ -76,7 +81,11 @@ export function validateForm(
       if (!pending) {
         const stress = stressSequence(scanLine(actualLine, dict, overrides))
         const deviations = findDeviations(stress, rule.meter.foot, rule.meter.feet)
-        status = deviations.length === 0 && stress.length === rule.meter.feet * 2 ? 'pass' : 'fail'
+        status =
+          deviations.length === 0 &&
+          stress.length === rule.meter.feet * FOOT_PATTERNS[rule.meter.foot].length
+            ? 'pass'
+            : 'fail'
       }
       items.push({
         line: lineNumber,
@@ -99,7 +108,9 @@ export function validateForm(
           // isPerfectRhyme itself excludes identical-word comparisons (it's
           // built for "suggest a *different* rhyming word", not this check).
           status =
-            refWord && actualWord && (actualWord === refWord || isPerfectRhyme(actualWord, refWord, dict))
+            refWord &&
+            actualWord &&
+            (actualWord === refWord || isPerfectRhyme(actualWord, refWord, dict))
               ? 'pass'
               : 'fail'
         }
@@ -115,7 +126,10 @@ export function validateForm(
       const sourceLine = lines[rule.refrainOf]
       let status: ChecklistItem['status'] = 'pending'
       if (!pending && sourceLine !== undefined) {
-        status = normalizeForRefrainCompare(actualLine) === normalizeForRefrainCompare(sourceLine) ? 'pass' : 'fail'
+        status =
+          normalizeForRefrainCompare(actualLine) === normalizeForRefrainCompare(sourceLine)
+            ? 'pass'
+            : 'fail'
       }
       items.push({
         line: lineNumber,

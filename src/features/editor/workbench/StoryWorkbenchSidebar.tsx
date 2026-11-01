@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useSettings } from '@/engines/useSettings'
+import { useRecentWords } from '@/engines/useRecentWords'
+import { useMemo, useState } from 'react'
+import { DictionaryProvider } from '@/engines/DictionaryContext'
 import { ThesaurusTab } from '@/features/editor/workbench/ThesaurusTab'
 import { SparkTab } from '@/features/editor/workbench/SparkTab'
 import { AskAiTab } from '@/features/editor/workbench/AskAiTab'
@@ -40,31 +43,41 @@ export function StoryWorkbenchSidebar({
   onClose,
   commentsProps,
 }: StoryWorkbenchSidebarProps) {
-  const [tab, setTab] = useState<TabId>('thesaurus')
-  const [recent, setRecent] = useState<string[]>([])
-
-  useEffect(() => {
-    if (!activeWord) return
-    setRecent((prev) => [activeWord, ...prev.filter((w) => w !== activeWord)].slice(0, 12))
-  }, [activeWord])
+  const { settings } = useSettings()
+  const [choice, setChoice] = useState<{ id: TabId; request?: number }>({ id: 'thesaurus' })
+  const recent = useRecentWords(activeWord)
+  const activeCommentId = commentsProps?.activeCommentId
+  const focusRequest = commentsProps?.focusRequest
+  const candidate = activeCommentId && choice.request !== focusRequest ? 'comments' : choice.id
+  const tab = candidate === 'ai' && !settings.aiEnabled ? 'thesaurus' : candidate
 
   const word = activeWord ?? ''
 
   // Plain stories have no comment threads (commentsProps is undefined) — hide
   // the tab entirely rather than showing a button that opens to nothing.
-  const visibleTabs = useMemo(() => TABS.filter((t) => t.id !== 'comments' || commentsProps), [commentsProps])
+  const visibleTabs = useMemo(
+    () =>
+      TABS.filter(
+        (t) => (t.id !== 'comments' || commentsProps) && (t.id !== 'ai' || settings.aiEnabled),
+      ),
+    [commentsProps, settings.aiEnabled],
+  )
 
   return (
     <WorkbenchPanel
       tabs={visibleTabs}
       activeTab={tab}
-      onTabChange={(id) => setTab(id as TabId)}
+      onTabChange={(id) => setChoice({ id: id as TabId, request: focusRequest })}
       hidden={hidden}
       onClose={onClose}
     >
-      {tab === 'thesaurus' && <ThesaurusTab word={word} onInsert={onInsert} />}
+      {!hidden && tab === 'thesaurus' && <ThesaurusTab word={word} onInsert={onInsert} />}
       {tab === 'recent' && <RecentLookupsTab words={recent} onSelect={onInsert} />}
-      {tab === 'spark' && <SparkTab onInsert={onInsert} />}
+      {!hidden && tab === 'spark' && (
+        <DictionaryProvider>
+          <SparkTab onInsert={onInsert} />
+        </DictionaryProvider>
+      )}
       {/* Ask AI stays mounted (just hidden) so switching tabs — or collapsing
        * the whole panel — never throws away the conversation in progress. */}
       <div className={tab === 'ai' ? 'h-full' : 'hidden'}>

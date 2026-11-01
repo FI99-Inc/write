@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useMemo, useState } from 'react'
+import { useDictionary } from '@/engines/useDictionary'
 import { findRhymesIndexed } from '@/engines/rhymeIndex'
 import { countSyllables } from '@/engines/syllables'
 import type { DictionaryIndex } from '@/engines/dictionary'
@@ -33,6 +33,8 @@ function WordGroup({
   dict: DictionaryIndex
   onInsert: (w: string) => void
 }) {
+  const [page, setPage] = useState({ words, limit: 40 })
+  const limit = page.words === words ? page.limit : 40
   if (words.length === 0) {
     return (
       <div>
@@ -42,7 +44,7 @@ function WordGroup({
     )
   }
 
-  const groups = groupBySyllableCount(words, dict)
+  const groups = groupBySyllableCount(words.slice(0, limit), dict)
 
   return (
     <div>
@@ -53,13 +55,13 @@ function WordGroup({
             <p className="text-[11px] text-ink/35">
               {count} syllable{count === 1 ? '' : 's'}
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="wr-rhyme-words">
               {groupWords.map((w) => (
                 <button
                   key={w}
                   type="button"
                   onClick={() => onInsert(w)}
-                  className="rounded-full border border-canvas-line bg-canvas px-2.5 py-0.5 text-sm text-ink hover:border-indigo hover:text-indigo"
+                  className="text-ink"
                 >
                   {w}
                 </button>
@@ -68,6 +70,15 @@ function WordGroup({
           </div>
         ))}
       </div>
+      {words.length > limit && (
+        <button
+          type="button"
+          className="wr-more-rhymes"
+          onClick={() => setPage({ words, limit: limit + 40 })}
+        >
+          Show more {title.toLowerCase()} ({words.length - limit} remaining)
+        </button>
+      )}
     </div>
   )
 }
@@ -80,18 +91,36 @@ export function RhymesTab({ word, onInsert }: RhymesTabProps) {
     return findRhymesIndexed(word, dict, rhymeIndex)
   }, [word, dict, rhymeIndex])
 
-  const localMatches = useMemo(() => new Set([...rhymes.perfect, ...rhymes.slant]), [rhymes])
+  const localMatches = useMemo(
+    () => new Set([...rhymes.perfect, ...rhymes.slant]),
+    [rhymes],
+  )
 
   if (!dict) return <p className="text-sm text-ink/40">Loading dictionary…</p>
-  if (!word) return <p className="text-sm text-ink/40">Click into a line to see rhymes for its last word.</p>
+  if (!word)
+    return (
+      <p className="text-sm text-ink/40">
+        Click into a line to see rhymes for its last word.
+      </p>
+    )
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-ink/50">
         Rhymes for <span className="font-medium text-ink">{word}</span>
       </p>
-      <WordGroup title="Perfect rhymes" words={rhymes.perfect} dict={dict} onInsert={onInsert} />
-      <WordGroup title="Slant rhymes" words={rhymes.slant} dict={dict} onInsert={onInsert} />
+      <WordGroup
+        title="Perfect rhymes"
+        words={rhymes.perfect}
+        dict={dict}
+        onInsert={onInsert}
+      />
+      <WordGroup
+        title="Slant rhymes"
+        words={rhymes.slant}
+        dict={dict}
+        onInsert={onInsert}
+      />
       <OnlineExtrasSection
         word={word}
         title="More rhymes (Datamuse, online)"

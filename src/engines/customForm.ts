@@ -22,6 +22,19 @@ export function buildCustomTemplate(input: CustomFormInput): FormTemplate {
   const rhymeLabels = input.rhymeScheme ? parseRhymeSchemeString(input.rhymeScheme) : []
   const syllables = input.syllablesPerLine ?? []
   const lineCount = Math.max(rhymeLabels.length, syllables.length)
+  if (syllables.some((count) => !Number.isInteger(count) || count <= 0))
+    throw new Error('Syllable targets must be positive whole numbers.')
+  for (const [rawLine, source] of Object.entries(input.refrainPairs ?? {})) {
+    const line = Number(rawLine)
+    if (
+      !Number.isInteger(line) ||
+      !Number.isInteger(source) ||
+      source < 1 ||
+      line > lineCount ||
+      line <= source
+    )
+      throw new Error('Each refrain must refer to an earlier line within this form.')
+  }
 
   const lineRules: LineRule[] = Array.from({ length: lineCount }, (_, i) => {
     const rule: LineRule = {}

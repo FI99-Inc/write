@@ -7,6 +7,16 @@ export async function setOverride(
   word: string,
   changes: Partial<Omit<WordOverride, 'word'>>,
 ): Promise<void> {
+  if (
+    changes.syllables !== undefined &&
+    (!Number.isInteger(changes.syllables) || changes.syllables < 0 || changes.syllables > 100)
+  )
+    throw new Error('Use a whole syllable count between 0 and 100.')
+  if (
+    changes.stressPattern !== undefined &&
+    (!/^[01]*$/.test(changes.stressPattern) || changes.stressPattern.length > 100)
+  )
+    throw new Error('Use a stress pattern of at most 100 zeroes and ones.')
   const normalized = word.toLowerCase()
   const existing = await db.wordOverrides.get(normalized)
   await db.wordOverrides.put({ ...existing, ...changes, word: normalized })
@@ -28,5 +38,25 @@ export async function deleteOverride(word: string): Promise<void> {
 /** Loads all stored overrides into the Map shape the engines expect. */
 export async function loadOverrideIndex(): Promise<OverrideIndex> {
   const overrides = await listOverrides()
-  return new Map(overrides.map((override) => [override.word, override]))
+  return new Map(
+    overrides.map((override) => [
+      override.word,
+      {
+        ...override,
+        syllables:
+          typeof override.syllables === 'number' &&
+          Number.isFinite(override.syllables) &&
+          override.syllables >= 0 &&
+          override.syllables <= 100
+            ? override.syllables
+            : undefined,
+        stressPattern:
+          typeof override.stressPattern === 'string' &&
+          /^[01]*$/.test(override.stressPattern) &&
+          override.stressPattern.length <= 100
+            ? override.stressPattern
+            : undefined,
+      },
+    ]),
+  )
 }

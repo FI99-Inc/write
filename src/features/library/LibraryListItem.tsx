@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { startTransition, useOptimistic, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import type { PoemStatus } from '@/types/poem'
 import { POEM_STATUSES } from '@/types/poem'
-import type { LibraryDoc } from '@/types/libraryDoc'
+import { setDocumentCollection } from '@/db/documents'
+import type { Collection } from '@/types/collection'
+import { documentPath, type LibraryDoc } from '@/types/libraryDoc'
 import { updatePoem, deletePoem } from '@/db/poems'
 import { updateStory, deleteStory } from '@/db/stories'
 
@@ -20,21 +22,43 @@ const STATUS_COLOR: Record<PoemStatus, string> = {
 interface LibraryListItemProps {
   doc: LibraryDoc
   formName: string | null
+  collections: Collection[]
   viewMode: 'list' | 'grid'
 }
 
 /** Renders a poem or a story in the unified library list — the same card
  * either way, routing to /poem/:id or /story/:id and writing through
  * updatePoem/deletePoem or updateStory/deleteStory depending on `doc.kind`. */
-export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProps) {
+export function LibraryListItem({ doc, formName, viewMode, collections }: LibraryListItemProps) {
   const navigate = useNavigate()
+  const [memberships, setMembership] = useOptimistic(
+    doc.collectionIds ?? [],
+    (current: string[], change: { id: string; selected: boolean }) => {
+      const next = new Set(current)
+      if (change.selected) next.add(change.id)
+      else next.delete(change.id)
+      return [...next]
+    },
+  )
+  function changeMembership(id: string, selected: boolean) {
+    setError('')
+    startTransition(async () => {
+      setMembership({ id, selected })
+      try {
+        await setDocumentCollection(doc, id, selected)
+      } catch {
+        setError('Could not update collection membership.')
+      }
+    })
+  }
+  const [error, setError] = useState('')
   const [pendingDelete, setPendingDelete] = useState(false)
   const [editingTags, setEditingTags] = useState(false)
   const [tagsDraft, setTagsDraft] = useState((doc.tags ?? []).join(', '))
 
   const update = doc.kind === 'poem' ? updatePoem : updateStory
   const remove = doc.kind === 'poem' ? deletePoem : deleteStory
-  const path = doc.kind === 'poem' ? `/poem/${doc.id}` : `/story/${doc.id}`
+  const path = documentPath(doc)
 
   function toggleFavorite() {
     void update(doc.id, { favorite: !doc.favorite })
@@ -86,21 +110,30 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
           onClick={() => navigate(path)}
           className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo"
         >
-          <span className="block truncate font-display text-lg text-ink">{doc.title || 'Untitled'}</span>
-          <span className="block truncate text-sm italic text-ink/50">{firstLine ?? 'Nothing written yet'}</span>
+          <span className="block truncate font-display text-lg text-ink">
+            {doc.title || 'Untitled'}
+          </span>
+          <span className="block truncate text-sm italic text-ink/50">
+            {firstLine ?? 'Nothing written yet'}
+          </span>
         </button>
       </div>
 
-      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-xs ${viewMode === 'grid' ? '' : 'sm:shrink-0'}`}>
+      <div
+        className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-xs ${viewMode === 'grid' ? '' : 'sm:shrink-0'}`}
+      >
         <span className="rounded-full border border-canvas-line px-2 py-0.5 capitalize text-ink/50">
           {doc.kind}
         </span>
 
         {formName && (
-          <span className="rounded-full border border-canvas-line px-2 py-0.5 text-ink/50">{formName}</span>
+          <span className="rounded-full border border-canvas-line px-2 py-0.5 text-ink/50">
+            {formName}
+          </span>
         )}
 
         <select
+          aria-label={`Status for ${doc.title || 'Untitled'}`}
           value={doc.status ?? 'draft'}
           onChange={(e) => handleStatusChange(e.target.value as PoemStatus)}
           className={`rounded border-none bg-transparent py-0.5 font-medium ${STATUS_COLOR[doc.status ?? 'draft']}`}
@@ -115,6 +148,7 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
         {editingTags ? (
           <input
             autoFocus
+            aria-label="Document tags"
             value={tagsDraft}
             onChange={(e) => setTagsDraft(e.target.value)}
             onBlur={commitTags}
@@ -146,6 +180,38 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
           </button>
         )}
 
+        {collections.length > 0 && (
+          <details
+            className="relative"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.currentTarget.open = false
+                event.currentTarget.querySelector('summary')?.focus()
+              }
+            }}
+          >
+            <summary className="cursor-pointer list-none text-ink/60">
+              Collections ({memberships.length})
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 min-w-48 space-y-2 rounded border border-canvas-line bg-paper p-3 shadow-lg">
+              {collections.map((collection) => (
+                <label key={collection.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={memberships.includes(collection.id)}
+                    onChange={(event) => changeMembership(collection.id, event.target.checked)}
+                  />
+                  {collection.name}
+                </label>
+              ))}
+            </div>
+          </details>
+        )}
+        {error && (
+          <span role="alert" className="text-berry">
+            {error}
+          </span>
+        )}
         <span className="text-ink/30">{new Date(doc.modifiedAt).toLocaleDateString()}</span>
 
         <Link to={`${path}/history`} className="text-ink/40 hover:text-indigo">
@@ -154,10 +220,18 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
 
         {pendingDelete ? (
           <span className="flex items-center gap-2">
-            <button type="button" onClick={handleDelete} className="font-medium text-berry hover:underline">
-              Delete
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="font-medium text-berry hover:underline"
+            >
+              Move to Trash
             </button>
-            <button type="button" onClick={() => setPendingDelete(false)} className="text-ink/50 hover:underline">
+            <button
+              type="button"
+              onClick={() => setPendingDelete(false)}
+              className="text-ink/50 hover:underline"
+            >
               Cancel
             </button>
           </span>
@@ -165,10 +239,10 @@ export function LibraryListItem({ doc, formName, viewMode }: LibraryListItemProp
           <button
             type="button"
             onClick={() => setPendingDelete(true)}
-            aria-label={`Delete "${doc.title || 'Untitled'}"`}
+            aria-label={`Move to Trash: "${doc.title || 'Untitled'}"`}
             className="text-ink/40 hover:text-berry"
           >
-            Delete
+            Trash
           </button>
         )}
       </div>

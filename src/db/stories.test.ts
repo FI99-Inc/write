@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '@/db/schema'
-import { createStory, getStory, listStories, updateStory, deleteStory, restoreStorySnapshot } from '@/db/stories'
+import {
+  createStory,
+  getStory,
+  listStories,
+  updateStory,
+  deleteStory,
+  restoreStorySnapshot,
+} from '@/db/stories'
 import { createSnapshot, listSnapshots } from '@/db/snapshots'
 
 beforeEach(async () => {
@@ -107,8 +114,8 @@ describe('restoreStorySnapshot', () => {
     expect(safety?.content).toEqual(preRestoreContent)
   })
 
-  it('does not wipe the story content when restoring a snapshot that has none', async () => {
-    const story = await createStory('Original title')
+  it('converts a plain snapshot into coherent rich content', async () => {
+    const story = await createStory('Original title', 'rich')
     const existingContent = { type: 'doc', content: [{ type: 'paragraph' }] }
     await updateStory(story.id, { content: existingContent })
     // Snapshot taken without a content arg, mirroring every snapshot the
@@ -118,7 +125,11 @@ describe('restoreStorySnapshot', () => {
     await restoreStorySnapshot(snapshot.id)
 
     const restored = await getStory(story.id)
-    expect(restored?.content).toEqual(existingContent)
+    expect(restored?.content).toEqual({
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'original body' }] }],
+    })
+    expect(restored?.body).toBe('original body')
   })
 
   it('does nothing if the snapshot does not exist', async () => {
@@ -148,6 +159,6 @@ describe('restoreStorySnapshot content', () => {
     await restoreStorySnapshot(snap.id)
     const restored = await getStory(story.id)
     expect(restored?.content).toEqual(doc)
-    expect(restored?.body).toBe('plain body')
+    expect(restored?.body).toBe('') // Rich content is authoritative, not a contradictory stale projection.
   })
 })

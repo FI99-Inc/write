@@ -1,12 +1,17 @@
-import { generateText, type JSONContent } from '@tiptap/core'
-import { storyExtensions } from '@/engines/richText/extensions'
-import { EMPTY_DOC } from '@/engines/richText/emptyDoc'
+import { getText, getTextSerializersFromSchema, type JSONContent } from '@tiptap/core'
+import type { Node } from '@tiptap/pm/model'
+import { getStorySchema } from '@/engines/richText/extensions'
+export { EMPTY_DOC } from '@/engines/richText/emptyDoc'
 
-export { EMPTY_DOC }
-
-/** The plain-text projection of a rich document — one blank line between
- * blocks so paragraph/word/reading stats and the line-based diff read it the
- * same way they read a plain story's body. */
-export function docToPlainText(doc: JSONContent): string {
-  return generateText(doc, storyExtensions, { blockSeparator: '\n\n' })
+export function nodeToPlainText(node: Node): string {
+  return getText(node, {
+    blockSeparator: '\n\n',
+    textSerializers: getTextSerializersFromSchema(node.type.schema),
+  })
 }
+
+export function docToPlainText(doc: JSONContent): string {
+  return nodeToPlainText(getStorySchema().nodeFromJSON(doc))
+}
+
+export { plainTextToDoc } from '@/engines/richText/plainText'

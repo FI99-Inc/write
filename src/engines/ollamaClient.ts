@@ -45,13 +45,19 @@ export async function listOllamaModels(endpoint: string): Promise<string[]> {
 
 /** Sends a chat turn to a local Ollama instance (POST /api/chat, non
  * streaming) and returns the assistant's reply text. */
-export async function askOllama(endpoint: string, model: string, messages: OllamaMessage[]): Promise<string> {
+export async function askOllama(
+  endpoint: string,
+  model: string,
+  messages: OllamaMessage[],
+  signal?: AbortSignal,
+): Promise<string> {
   let response: Response
   try {
     response = await fetch(`${trimEndpoint(endpoint)}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, messages, stream: false }),
+      ...(signal ? { signal } : {}),
     })
   } catch {
     throw new OllamaError(

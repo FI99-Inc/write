@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { findSoundMatches } from '@/engines/soundTools'
 
 interface SoundToolsTabProps {
@@ -8,7 +8,15 @@ interface SoundToolsTabProps {
   onInsert: (word: string) => void
 }
 
-function MatchRow({ label, words, onInsert }: { label: string; words: string[]; onInsert: (w: string) => void }) {
+function MatchRow({
+  label,
+  words,
+  onInsert,
+}: {
+  label: string
+  words: string[]
+  onInsert: (w: string) => void
+}) {
   return (
     <div>
       <p className="mb-1 text-xs font-medium text-ink/40">{label}</p>
@@ -41,16 +49,33 @@ export function SoundToolsTab({ word, poemWords, onInsert }: SoundToolsTabProps)
   }, [word, poemWords, dict])
 
   if (!dict) return <p className="text-sm text-ink/40">Loading dictionary…</p>
-  if (!word) return <p className="text-sm text-ink/40">Click into a line to find sound patterns for its last word.</p>
+  if (!word)
+    return (
+      <p className="text-sm text-ink/40">
+        Click into a line to find sound patterns for its last word.
+      </p>
+    )
 
   return (
     <div className="space-y-5">
       <p className="text-sm text-ink/50">
         Sound matches within this poem for <span className="font-medium text-ink">{word}</span>
       </p>
-      <MatchRow label="Alliteration (shared initial sound)" words={matches.alliteration} onInsert={onInsert} />
-      <MatchRow label="Assonance (shared vowel sound)" words={matches.assonance} onInsert={onInsert} />
-      <MatchRow label="Consonance (shared consonant sound)" words={matches.consonance} onInsert={onInsert} />
+      <MatchRow
+        label="Alliteration (shared initial sound)"
+        words={matches.alliteration}
+        onInsert={onInsert}
+      />
+      <MatchRow
+        label="Assonance (shared vowel sound)"
+        words={matches.assonance}
+        onInsert={onInsert}
+      />
+      <MatchRow
+        label="Consonance (shared consonant sound)"
+        words={matches.consonance}
+        onInsert={onInsert}
+      />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { EditorState } from '@tiptap/pm/state'
 import { describe, it, expect } from 'vitest'
 import { collectCommentIds, partitionComments } from '@/engines/richText/comments'
 import { getStorySchema } from '@/engines/richText/extensions'
@@ -10,7 +11,11 @@ const docWithComment = {
       type: 'paragraph',
       content: [
         { type: 'text', text: 'Look at ' },
-        { type: 'text', marks: [{ type: 'comment', attrs: { commentId: 'c1' } }], text: 'this line' },
+        {
+          type: 'text',
+          marks: [{ type: 'comment', attrs: { commentId: 'c1' } }],
+          text: 'this line',
+        },
         { type: 'text', text: ' closely.' },
       ],
     },
@@ -49,6 +54,18 @@ describe('anchor survives edits (ProseMirror mapping)', () => {
         to = pos + child.nodeSize
       }
     })
-    expect(node.textBetween(from, to)).toBe('this line')
+    const state = EditorState.create({ schema, doc: node })
+    const transaction = state.tr.insertText('Opening words ', 1)
+    const updated = state.apply(transaction)
+    expect(updated.doc.textContent).toContain('Opening words ')
+    expect(
+      updated.doc.textBetween(transaction.mapping.map(from), transaction.mapping.map(to)),
+    ).toBe('this line')
+    let anchoredText = ''
+    updated.doc.descendants((child) => {
+      if (child.isText && child.marks.some((mark) => mark.type.name === 'comment'))
+        anchoredText += child.text
+    })
+    expect(anchoredText).toBe('this line')
   })
 })

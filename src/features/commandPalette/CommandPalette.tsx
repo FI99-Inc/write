@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useCommandPaletteState } from '@/engines/CommandPaletteContext'
+import { useMemo, useRef, useState } from 'react'
+import { useModalFocus } from '@/engines/useModalFocus'
+import { useCommandPaletteState, type Command } from '@/engines/useCommandPalette'
 
 export function CommandPalette() {
   const { open, setOpen, commands } = useCommandPaletteState()
+  return open ? <CommandDialog commands={commands} onClose={() => setOpen(false)} /> : null
+}
+
+function CommandDialog({ commands, onClose }: { commands: Command[]; onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useModalFocus(dialogRef, true, onClose)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -13,42 +19,33 @@ export function CommandPalette() {
     return commands.filter((c) => c.label.toLowerCase().includes(q))
   }, [commands, query])
 
-  useEffect(() => {
-    if (!open) return
-    setQuery('')
-    setHighlighted(0)
-    const frame = requestAnimationFrame(() => inputRef.current?.focus())
-    return () => cancelAnimationFrame(frame)
-  }, [open])
-
-  useEffect(() => {
-    setHighlighted(0)
-  }, [query])
-
-  if (!open) return null
-
   function runHighlighted() {
     const command = filtered[highlighted]
     if (!command) return
-    setOpen(false)
+    onClose()
     command.run()
   }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 px-4 pt-[12dvh]"
-      onClick={() => setOpen(false)}
+      onClick={() => onClose()}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        aria-modal="true"
         role="dialog"
         aria-label="Command palette"
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg overflow-hidden rounded-lg border border-canvas-line bg-paper shadow-xl"
       >
         <input
-          ref={inputRef}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setHighlighted(0)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowDown') {
               e.preventDefault()
@@ -60,7 +57,7 @@ export function CommandPalette() {
               e.preventDefault()
               runHighlighted()
             } else if (e.key === 'Escape') {
-              setOpen(false)
+              onClose()
             }
           }}
           placeholder="Type a command…"
@@ -77,7 +74,7 @@ export function CommandPalette() {
                   type="button"
                   onMouseEnter={() => setHighlighted(index)}
                   onClick={() => {
-                    setOpen(false)
+                    onClose()
                     command.run()
                   }}
                   className={`flex w-full items-center justify-between px-4 py-2 text-left text-sm ${
@@ -85,7 +82,9 @@ export function CommandPalette() {
                   }`}
                 >
                   <span>{command.label}</span>
-                  {command.shortcut && <span className="text-xs text-ink/30">{command.shortcut}</span>}
+                  {command.shortcut && (
+                    <span className="text-xs text-ink/30">{command.shortcut}</span>
+                  )}
                 </button>
               </li>
             ))

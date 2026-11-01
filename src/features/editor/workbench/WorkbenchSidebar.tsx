@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useSettings } from '@/engines/useSettings'
+import { useRecentWords } from '@/engines/useRecentWords'
+import { useState } from 'react'
 import { RhymesTab } from '@/features/editor/workbench/RhymesTab'
 import { ThesaurusTab } from '@/features/editor/workbench/ThesaurusTab'
 import { SyllablesStressTab } from '@/features/editor/workbench/SyllablesStressTab'
@@ -51,30 +53,29 @@ export function WorkbenchSidebar({
   hidden,
   onClose,
 }: WorkbenchSidebarProps) {
-  const [tab, setTab] = useState<TabId>('rhymes')
-  const [recent, setRecent] = useState<string[]>([])
-
-  useEffect(() => {
-    if (!activeWord) return
-    setRecent((prev) => [activeWord, ...prev.filter((w) => w !== activeWord)].slice(0, 12))
-  }, [activeWord])
+  const { settings } = useSettings()
+  const [choice, setTab] = useState<TabId>('rhymes')
+  const tab = choice === 'ai' && !settings.aiEnabled ? 'rhymes' : choice
+  const recent = useRecentWords(activeWord)
 
   const word = activeWord ?? ''
 
   return (
     <WorkbenchPanel
-      tabs={TABS}
+      tabs={TABS.filter((tab) => tab.id !== 'ai' || settings.aiEnabled)}
       activeTab={tab}
       onTabChange={(id) => setTab(id as TabId)}
       hidden={hidden}
       onClose={onClose}
     >
-      {tab === 'rhymes' && <RhymesTab word={word} onInsert={onInsert} />}
-      {tab === 'thesaurus' && <ThesaurusTab word={word} onInsert={onInsert} />}
-      {tab === 'syllables' && <SyllablesStressTab />}
-      {tab === 'sound' && <SoundToolsTab word={word} poemWords={poemWords} onInsert={onInsert} />}
-      {tab === 'meter' && <MeterTab body={body} />}
-      {tab === 'form' && (
+      {!hidden && tab === 'rhymes' && <RhymesTab word={word} onInsert={onInsert} />}
+      {!hidden && tab === 'thesaurus' && <ThesaurusTab word={word} onInsert={onInsert} />}
+      {!hidden && tab === 'syllables' && <SyllablesStressTab />}
+      {!hidden && tab === 'sound' && (
+        <SoundToolsTab word={word} poemWords={poemWords} onInsert={onInsert} />
+      )}
+      {!hidden && tab === 'meter' && <MeterTab body={body} />}
+      {!hidden && tab === 'form' && (
         <FormTab
           body={body}
           formId={formId}
@@ -85,7 +86,7 @@ export function WorkbenchSidebar({
         />
       )}
       {tab === 'recent' && <RecentLookupsTab words={recent} onSelect={onInsert} />}
-      {tab === 'spark' && <SparkTab onInsert={onInsert} />}
+      {!hidden && tab === 'spark' && <SparkTab onInsert={onInsert} />}
       {/* Ask AI stays mounted (just hidden) so switching tabs — or collapsing
        * the whole panel — never throws away the conversation in progress. */}
       <div className={tab === 'ai' ? 'h-full' : 'hidden'}>

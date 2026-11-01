@@ -6,8 +6,8 @@ const GHAZAL_COUPLETS = 5
 function ghazalLineRules(): LineRule[] {
   const rules: LineRule[] = []
   for (let couplet = 0; couplet < GHAZAL_COUPLETS; couplet++) {
-    rules.push({})
-    rules.push({ endWordMatches: 1 })
+    rules.push(couplet === 0 ? { endWordMatches: 1 } : {})
+    rules.push(couplet === 0 ? {} : { endWordMatches: 1 })
   }
   return rules
 }
@@ -16,7 +16,7 @@ export const ghazal: FormTemplate = {
   id: 'ghazal',
   name: 'Ghazal',
   description:
-    "A series of self-contained couplets (5 shown here, though ghazals often run longer). Both lines of the opening couplet end on the same word or short phrase (the radif); every couplet after that repeats the radif only at the end of its second line.",
+    'A series of self-contained couplets (5 shown here, though ghazals often run longer). Both lines of the opening couplet end on the same word or short phrase (the radif); every couplet after that repeats the radif only at the end of its second line.',
   example: [
     'My heart forgets, and then remembers, again',
     'Each door I close, I find myself at again',
@@ -58,7 +58,7 @@ export const rondeau: FormTemplate = {
   id: 'rondeau',
   name: 'Rondeau',
   description:
-    "15 lines across a quintet, a quatrain, and a sestet (rhymed AABBA AABR AABBAR), where R is a short refrain repeating the opening words of line 1 — not the whole line.",
+    '15 lines across a quintet, a quatrain, and a sestet (rhymed AABBA AABR AABBAR), where R is a short refrain repeating the opening words of line 1 — not the whole line.',
   example: [
     'Autumn light begins to fade away',
     'and something in me wants the year to stay',

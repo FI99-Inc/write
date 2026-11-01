@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { diffLines } from '@/engines/diff'
 
 interface DiffViewProps {
@@ -6,11 +7,12 @@ interface DiffViewProps {
 }
 
 export function DiffView({ oldText, newText }: DiffViewProps) {
-  const ops = diffLines(oldText, newText)
+  const ops = useMemo(() => diffLines(oldText, newText), [oldText, newText])
 
+  const [limit, setLimit] = useState(1000)
   return (
     <div className="overflow-hidden rounded-lg border border-canvas-line bg-paper font-display text-sm leading-relaxed [&>div]:break-words">
-      {ops.map((op, index) => (
+      {ops.slice(0, limit).map((op, index) => (
         <div
           key={index}
           className={
@@ -27,6 +29,11 @@ export function DiffView({ oldText, newText }: DiffViewProps) {
           {op.line.length > 0 ? op.line : ' '}
         </div>
       ))}
+      {ops.length > limit && (
+        <button className="action-secondary m-3" onClick={() => setLimit(limit + 1000)}>
+          Show more comparison ({limit} of {ops.length} lines shown)
+        </button>
+      )}
     </div>
   )
 }

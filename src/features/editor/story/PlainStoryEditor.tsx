@@ -1,102 +1,91 @@
-import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import type { Editor } from '@tiptap/core'
+import {
+  plainWritingDoc,
+  plainWritingText,
+  plainWritingSlice,
+  plainWritingExtensions,
+  pastePlainWriting,
+  plainClipboardText,
+  copyPlainWriting,
+} from '@/engines/plainWriting'
 import { getWordAtPosition } from '@/engines/normalize'
 import type { StorySurfaceHandle } from '@/features/editor/story/storySurface'
-
-/** Nearest scrolling ancestor, so the autosize height reset below can
- * preserve its scroll position (see the useLayoutEffect note). */
-function getScrollParent(node: HTMLElement): HTMLElement | null {
-  let el = node.parentElement
-  while (el) {
-    const overflowY = getComputedStyle(el).overflowY
-    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) return el
-    el = el.parentElement
-  }
-  return null
-}
-
 interface PlainStoryEditorProps {
   body: string
   onBodyChange: (body: string) => void
   onActiveWordChange: (word: string | null) => void
+  onEditor?: (editor: Editor | null) => void
   fontFamily: string
   fontSize: number
   lineHeight: number
 }
+function activeWord(editor: Editor | null): string | null {
+  if (!editor) return null
+  const { $from } = editor.state.selection
+  return getWordAtPosition($from.parent.textContent, $from.parentOffset)?.word ?? null
+}
 
-/** The original short-story surface: a single autosizing textarea whose page
- * scrolls as one document. Extracted from StoryEditorPage so it can sit behind
- * the same StorySurfaceHandle as the rich editor. */
+/** Incremental paragraphs avoid native large-textarea input cost while retaining a plain-text storage contract. */
 export const PlainStoryEditor = forwardRef<StorySurfaceHandle, PlainStoryEditorProps>(
-  function PlainStoryEditor({ body, onBodyChange, onActiveWordChange, fontFamily, fontSize, lineHeight }, ref) {
-    const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-    useImperativeHandle(ref, () => ({
-      getActiveWord() {
-        const ta = textareaRef.current
-        if (!ta) return null
-        return getWordAtPosition(body, ta.selectionStart)?.word ?? null
+  function PlainStoryEditor(
+    { body, onBodyChange, onActiveWordChange, onEditor, fontFamily, fontSize, lineHeight },
+    ref,
+  ) {
+    const [initialContent] = useState(() => plainWritingDoc(body))
+    const editor = useEditor({
+      extensions: plainWritingExtensions,
+      content: initialContent,
+      coreExtensionOptions: { clipboardTextSerializer: { blockSeparator: '\n' } },
+      immediatelyRender: false,
+      editorProps: {
+        handleDOMEvents: {
+          copy: (view, event) => copyPlainWriting(view, event),
+          cut: (view, event) => copyPlainWriting(view, event, true),
+        },
+        attributes: {
+          role: 'textbox',
+          'aria-label': 'Writing text',
+          'aria-multiline': 'true',
+          spellcheck: 'true',
+        },
+        handlePaste(view, event) {
+          if (!event.clipboardData) return false
+          const text = plainClipboardText(event.clipboardData)
+          event.preventDefault()
+          pastePlainWriting(view, text)
+          return true
+        },
       },
-      insertText(text: string) {
-        const ta = textareaRef.current
-        if (!ta) return
-        const start = ta.selectionStart
-        const end = ta.selectionEnd
-        onBodyChange(body.slice(0, start) + text + body.slice(end))
-        requestAnimationFrame(() => {
-          ta.focus()
-          const pos = start + text.length
-          ta.setSelectionRange(pos, pos)
-        })
-      },
-      getPlainText() {
-        return body
-      },
-    }))
-
-    // Autosize to content. Resetting height to 'auto' collapses the textarea
-    // to its min-height, shrinking the scroll container so the browser clamps
-    // its scrollTop toward 0 — which visibly jumps the page up when editing
-    // mid-document. Capture the scroller's position and restore it after
-    // regrowing, in useLayoutEffect so the whole thing happens before paint.
-    useLayoutEffect(() => {
-      const ta = textareaRef.current
-      if (!ta) return
-      const scroller = getScrollParent(ta)
-      const prevScrollTop = scroller ? scroller.scrollTop : window.scrollY
-      ta.style.height = 'auto'
-      ta.style.height = `${ta.scrollHeight}px`
-      if (scroller) scroller.scrollTop = prevScrollTop
-      else window.scrollTo(0, prevScrollTop)
-    }, [body, fontSize, lineHeight])
-
-    function handleSelection() {
-      const ta = textareaRef.current
-      if (!ta) return
-      onActiveWordChange(getWordAtPosition(body, ta.selectionStart)?.word ?? null)
-    }
-
+      onUpdate: ({ editor }) => onBodyChange(plainWritingText(editor.state.doc)),
+      onSelectionUpdate: ({ editor }) => onActiveWordChange(activeWord(editor)),
+    })
+    useEffect(() => {
+      onEditor?.(editor)
+      return () => onEditor?.(null)
+    }, [editor, onEditor])
+    useImperativeHandle(
+      ref,
+      () => ({
+        getActiveWord: () => activeWord(editor),
+        getPlainText: () => (editor ? plainWritingText(editor.state.doc) : body),
+        insertText(text: string) {
+          if (!editor) return
+          const transaction = editor.state.tr.replaceSelection(
+            plainWritingSlice(text, editor.state.schema),
+          )
+          editor.view.dispatch(transaction.scrollIntoView())
+          editor.commands.focus()
+        },
+      }),
+      [editor, body],
+    )
     return (
-      <textarea
-        ref={textareaRef}
-        value={body}
-        onChange={(e) => onBodyChange(e.target.value)}
-        onSelect={handleSelection}
-        onClick={handleSelection}
-        onKeyUp={handleSelection}
-        placeholder="Once upon a time…"
-        aria-label="Story text"
-        spellCheck
-        className="mt-6 w-full resize-none overflow-hidden bg-transparent outline-none placeholder:text-ink/30"
-        style={{
-          fontSize,
-          lineHeight: `${lineHeight}px`,
-          fontFamily,
-          color: 'var(--color-ink)',
-          caretColor: 'var(--color-ink)',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          minHeight: '60vh',
-        }}
+      <EditorContent
+        editor={editor}
+        className="plain-writing-surface mt-6 w-full"
+        style={{ fontFamily, fontSize, lineHeight: `${lineHeight}px`, color: 'var(--color-ink)' }}
       />
     )
   },

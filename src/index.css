@@ -1,23 +1,23 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import './features/workspace/appearance.css';
+@import './features/workspace/workspace.css';
 
 @theme {
-  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-sans:
-    -apple-system, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-sans: 'Segoe UI', system-ui, sans-serif;
 
-  /* Manuscript palette: cool neutral chrome around a warm paper surface,
-     ink-indigo as the working accent, verdigris/berry reserved for status. */
+  /* Tailwind catalog; appearance.css supplies the active semantic palette. */
   --color-ink: #2b2a33;
-  --color-indigo: #3e4c8c;
-  --color-indigo-soft: #6b78b0;
+  --color-indigo: var(--color-accent);
+  --color-indigo-soft: var(--color-focus);
   --color-verdigris: #4b7b6f;
-  --color-berry: #8c3b4b;
+  --color-berry: var(--color-error);
   --color-paper: #fbfaf7;
-  --color-canvas: #f1f0ee;
-  --color-canvas-line: #e4e2dd;
+  --color-canvas: var(--color-paper);
+  --color-canvas-line: var(--color-rule);
 
   /* Extra hues for the rhyme-scheme label palette (rhymeColors.ts) once a
-     poem has more concurrent rhyme groups than the core accent colors —
+     poem has more concurrent rhyme groups than the core accent colors â€”
      each tuned for >=4.5:1 contrast against canvas in its theme. */
   --color-rhyme-amber: #8e642f;
   --color-rhyme-plum: #6b4c8c;
@@ -26,46 +26,8 @@
   --color-rhyme-moss: #4e7632;
 }
 
-/* Dark mode keeps the same manuscript personality — ink-on-paper — just
-   with the values inverted: a near-black canvas, a slightly lighter paper
-   surface for the writing area, and brighter accent tones so they still
-   read clearly against the dark background. */
-:root[data-theme='dark'] {
-  --color-ink: #e8e6e0;
-  --color-indigo: #7b89c9;
-  --color-indigo-soft: #9aa5d6;
-  --color-verdigris: #6fa396;
-  --color-berry: #c97d8d;
-  --color-paper: #232228;
-  --color-canvas: #1c1b20;
-  --color-canvas-line: #35333c;
-  --color-rhyme-amber: #b8823d;
-  --color-rhyme-plum: #9c7fba;
-  --color-rhyme-steel: #4791ba;
-  --color-rhyme-bronze: #ac8449;
-  --color-rhyme-moss: #639740;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --color-ink: #e8e6e0;
-    --color-indigo: #7b89c9;
-    --color-indigo-soft: #9aa5d6;
-    --color-verdigris: #6fa396;
-    --color-berry: #c97d8d;
-    --color-paper: #232228;
-    --color-canvas: #1c1b20;
-    --color-canvas-line: #35333c;
-    --color-rhyme-amber: #b8823d;
-    --color-rhyme-plum: #9c7fba;
-    --color-rhyme-steel: #4791ba;
-    --color-rhyme-bronze: #ac8449;
-    --color-rhyme-moss: #639740;
-  }
-}
-
 html {
-  /* Stop iOS inflating text when a phone is rotated to landscape — the
+  /* Stop iOS inflating text when a phone is rotated to landscape â€” the
      editor's line metrics are computed in px and can't absorb it. */
   -webkit-text-size-adjust: 100%;
 }
@@ -78,7 +40,7 @@ body,
 
 /* The editor is an app shell: a fixed header over an internally-scrolling
    writing surface. A percentage height resolves against the *large* viewport
-   on mobile, so the bottom of the shell hides behind the browser chrome —
+   on mobile, so the bottom of the shell hides behind the browser chrome â€”
    dvh tracks what's actually visible instead. */
 @supports (height: 100dvh) {
   html,
@@ -113,13 +75,32 @@ body,
 
 /* Rich story editor (TipTap). Tailwind's reset strips list/heading styling,
    so the ProseMirror surface needs its block rhythm restored explicitly. */
-.ProseMirror { outline: none; }
-.ProseMirror > * + * { margin-top: 0.75em; }
-.ProseMirror h1 { font-size: 1.6em; font-weight: 600; }
-.ProseMirror h2 { font-size: 1.35em; font-weight: 600; }
-.ProseMirror h3 { font-size: 1.15em; font-weight: 600; }
-.ProseMirror ul { list-style: disc; padding-left: 1.5em; }
-.ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
+.ProseMirror {
+  outline: none;
+}
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+.ProseMirror h1 {
+  font-size: 1.6em;
+  font-weight: 600;
+}
+.ProseMirror h2 {
+  font-size: 1.35em;
+  font-weight: 600;
+}
+.ProseMirror h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.ProseMirror ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.ProseMirror ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
 .ProseMirror blockquote {
   border-left: 3px solid var(--color-canvas-line);
   padding-left: 1em;
@@ -131,7 +112,10 @@ body,
   border-top: 1px solid var(--color-canvas-line);
   margin: 1.5em 0;
 }
-.ProseMirror a { color: var(--color-indigo); text-decoration: underline; }
+.ProseMirror a {
+  color: var(--color-indigo);
+  text-decoration: underline;
+}
 .ProseMirror .story-comment {
   background: color-mix(in srgb, var(--color-indigo) 18%, transparent);
   border-bottom: 2px solid var(--color-indigo);
@@ -156,12 +140,14 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 /* Printing/PDF export renders only the hidden PrintablePoem/PrintableStory
    block (see print:hidden / print:block utility classes in EditorPage,
-   StoryEditorPage, PrintablePoem, and PrintableStory) — plain black-on-white
+   StoryEditorPage, PrintablePoem, and PrintableStory) â€” plain black-on-white
    regardless of the active theme. PrintableStory reuses the editor's
    `.ProseMirror` class to render rich HTML, but the editor's own
    `.ProseMirror` color rules (blockquote, a) use theme variables that are
@@ -181,4 +167,164 @@ body {
   body {
     background: #ffffff;
   }
+}
+
+/* Header actions share a baseline and hit area across all writing screens. */
+.header-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+.header-action:hover {
+  color: var(--color-indigo);
+}
+.header-action:focus-visible {
+  outline: 2px solid var(--color-indigo);
+  outline-offset: 3px;
+}
+.ProseMirror mark,
+.ProseMirror mark * {
+  color: #2b2a33 !important;
+}
+
+/* Map the editor palette to readable theme colors without rewriting saved marks. */
+.ProseMirror span[style*='color: rgb(140, 59, 75)'],
+.ProseMirror span[style*='color: #8c3b4b'] {
+  color: var(--color-berry) !important;
+}
+.ProseMirror span[style*='color: rgb(62, 76, 140)'],
+.ProseMirror span[style*='color: #3e4c8c'] {
+  color: var(--color-indigo) !important;
+}
+.ProseMirror span[style*='color: rgb(75, 123, 111)'],
+.ProseMirror span[style*='color: #4b7b6f'] {
+  color: var(--color-verdigris) !important;
+}
+.ProseMirror span[style*='color: rgb(142, 100, 47)'],
+.ProseMirror span[style*='color: #8e642f'] {
+  color: var(--color-rhyme-amber) !important;
+}
+.ProseMirror mark span[style] {
+  color: #2b2a33 !important;
+}
+
+.header-action {
+  gap: 0.25rem;
+}
+
+@layer components {
+  /* Workspace controls use the manuscript palette; reading order and the text carry the hierarchy. */
+  .workspace-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--color-canvas-line);
+    padding: 1.25rem 2rem;
+  }
+  .field-label {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--color-ink);
+  }
+  .field-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--color-canvas-line);
+    border-radius: 0.375rem;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    padding: 0.5rem 0.625rem;
+  }
+  .field-input:focus-visible {
+    outline: 2px solid var(--color-indigo);
+    outline-offset: 2px;
+  }
+  .action-primary,
+  .action-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  .action-primary {
+    border: 1px solid var(--color-indigo);
+    background: var(--color-indigo);
+    color: var(--color-paper);
+  }
+  .action-secondary {
+    border: 1px solid var(--color-canvas-line);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .quiet-button {
+    color: var(--color-indigo);
+    padding: 0.25rem;
+  }
+  button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .writing-column {
+    width: 100%;
+    margin-inline: auto;
+  }
+  .writing-width-narrow {
+    max-width: 36rem;
+  }
+  .writing-width-comfortable {
+    max-width: 44rem;
+  }
+  .writing-width-wide {
+    max-width: 60rem;
+  }
+  .writing-column.is-focused {
+    max-width: 38rem;
+  }
+  @media (max-width: 639px) {
+    .workspace-header {
+      padding: 1rem;
+      gap: 1rem;
+    }
+    .quiet-button {
+      min-height: 2.5rem;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+.search-match {
+  background: #fef3c7;
+  color: #2b2a33;
+  box-shadow: 0 0 0 1px #b98c32;
+  border-radius: 2px;
+}
+.story-rich-editor .ProseMirror {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.plain-writing-surface .ProseMirror {
+  min-height: 60vh;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  outline: none;
+}
+.plain-writing-surface .ProseMirror p {
+  margin: 0;
 }

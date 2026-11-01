@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { countSyllables } from '@/engines/syllables'
 import { getStressPattern } from '@/engines/stress'
 import { findRhymesIndexed } from '@/engines/rhymeIndex'
@@ -27,14 +27,19 @@ function StressDots({ pattern }: { pattern: string | null }) {
 
 export function WordInspectorPopover({ word, x, y, onClose }: WordInspectorPopoverProps) {
   const { dict, rhymeIndex, overrides } = useDictionary()
+  const [lookupError, setLookupError] = useState(false)
   const [synonyms, setSynonyms] = useState<string[] | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
-    loadThesaurus().then((thesaurus) => {
-      if (!cancelled) setSynonyms(thesaurus.get(word) ?? [])
-    })
+    loadThesaurus()
+      .then((thesaurus) => {
+        if (!cancelled) setSynonyms(thesaurus.get(word) ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setLookupError(true)
+      })
     return () => {
       cancelled = true
     }
@@ -109,13 +114,21 @@ export function WordInspectorPopover({ word, x, y, onClose }: WordInspectorPopov
 
       <div className="mt-3">
         <p className="mb-1 text-xs font-medium text-ink/40">Slant rhymes</p>
-        <p className="text-ink/70">{rhymes.slant.length > 0 ? rhymes.slant.slice(0, 8).join(', ') : '—'}</p>
+        <p className="text-ink/70">
+          {rhymes.slant.length > 0 ? rhymes.slant.slice(0, 8).join(', ') : '—'}
+        </p>
       </div>
 
       <div className="mt-3 border-t border-canvas-line pt-3">
         <p className="mb-1 text-xs font-medium text-ink/40">Synonyms</p>
         <p className="text-ink/70">
-          {synonyms === null ? 'Loading…' : synonyms.length > 0 ? synonyms.slice(0, 10).join(', ') : '—'}
+          {lookupError
+            ? 'Unavailable. Open the Thesaurus tab to retry.'
+            : synonyms === null
+              ? 'Loading…'
+              : synonyms.length > 0
+                ? synonyms.slice(0, 10).join(', ')
+                : '—'}
         </p>
       </div>
     </div>

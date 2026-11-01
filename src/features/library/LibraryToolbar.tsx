@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { PoemStatus } from '@/types/poem'
 import { POEM_STATUSES } from '@/types/poem'
 import type { Collection } from '@/types/collection'
@@ -40,11 +42,19 @@ export function LibraryToolbar({
   viewMode,
   onViewModeChange,
 }: LibraryToolbarProps) {
+  const search = useRef<HTMLInputElement>(null)
+  const location = useLocation()
+  useEffect(() => {
+    if (new URLSearchParams(location.search).has('find'))
+      search.current?.focus()
+  }, [location.search])
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-canvas-line px-4 py-3 text-sm sm:gap-3 sm:px-8">
       {/* Full width below sm so search gets its own row and the filters wrap
        * underneath it, rather than everything fighting over 360px. */}
       <input
+        aria-label="Search library"
+        ref={search}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search your library…"
@@ -52,24 +62,35 @@ export function LibraryToolbar({
       />
 
       <div className="flex gap-1 rounded-full border border-canvas-line p-0.5">
-        {([null, 'poem', 'story'] as const).map((k) => (
+        {([null, 'poem', 'story', 'idea'] as const).map((k) => (
           <button
             key={k ?? 'all'}
             type="button"
             onClick={() => onKindChange(k)}
             aria-pressed={kind === k}
             className={`rounded-full px-3 py-1.5 text-xs sm:py-1 ${
-              kind === k ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'
+              kind === k
+                ? 'bg-indigo text-paper'
+                : 'text-ink/50 hover:text-indigo'
             }`}
           >
-            {k === 'poem' ? 'Poems' : k === 'story' ? 'Stories' : 'All'}
+            {k === 'poem'
+              ? 'Poems'
+              : k === 'story'
+                ? 'Stories'
+                : k === 'idea'
+                  ? 'Ideas'
+                  : 'All'}
           </button>
         ))}
       </div>
 
       <select
+        aria-label="Filter by status"
         value={status ?? ''}
-        onChange={(e) => onStatusChange((e.target.value || null) as PoemStatus | null)}
+        onChange={(e) =>
+          onStatusChange((e.target.value || null) as PoemStatus | null)
+        }
         className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
       >
         <option value="">Any status</option>
@@ -82,6 +103,7 @@ export function LibraryToolbar({
 
       {tags.length > 0 && (
         <select
+          aria-label="Filter by tag"
           value={tag ?? ''}
           onChange={(e) => onTagChange(e.target.value || null)}
           className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
@@ -97,6 +119,7 @@ export function LibraryToolbar({
 
       {collections.length > 0 && (
         <select
+          aria-label="Filter by collection"
           value={collectionId ?? ''}
           onChange={(e) => onCollectionChange(e.target.value || null)}
           className="max-w-[45vw] rounded border border-canvas-line bg-canvas px-2 py-1.5 text-ink/70 sm:max-w-none"
@@ -116,7 +139,7 @@ export function LibraryToolbar({
         aria-pressed={favoriteOnly}
         className={`rounded-full px-3 py-1.5 ${favoriteOnly ? 'bg-indigo text-paper' : 'text-ink/50 hover:text-indigo'}`}
       >
-        ★ Favorites
+        Favorites
       </button>
 
       <div className="ml-auto flex items-center gap-1 rounded-full border border-canvas-line p-0.5">

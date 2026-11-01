@@ -5,6 +5,7 @@ import type { WordOverride } from '@/types/override'
 import type { Snapshot } from '@/types/snapshot'
 import type { FormTemplate } from '@/types/form'
 import type { Collection } from '@/types/collection'
+import type { Project } from '@/types/project'
 
 export class Sonnet5DB extends Dexie {
   poems!: EntityTable<Poem, 'id'>
@@ -14,8 +15,11 @@ export class Sonnet5DB extends Dexie {
   customForms!: EntityTable<FormTemplate, 'id'>
   collections!: EntityTable<Collection, 'id'>
 
-  constructor() {
-    super('sonnet5')
+  projects!: EntityTable<Project, 'id'>
+  backupPreferences!: EntityTable<{ id: string; value: unknown }, 'id'>
+
+  constructor(name = 'sonnet5') {
+    super(name)
     this.version(1).stores({
       poems: 'id, title, createdAt, modifiedAt',
     })
@@ -64,6 +68,13 @@ export class Sonnet5DB extends Dexie {
       customForms: 'id, name',
       collections: 'id, name, createdAt',
     })
+    // Existing rows remain active; absent prose kind continues to mean story.
+    this.version(8).stores({
+      poems: 'id, title, createdAt, modifiedAt, deletedAt, status, favorite, *tags, *collectionIds',
+      stories:
+        'id, title, createdAt, modifiedAt, deletedAt, kind, status, favorite, *tags, *collectionIds',
+    })
+    this.version(9).stores({ projects: 'id, name, modifiedAt', backupPreferences: 'id' })
   }
 }
 

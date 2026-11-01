@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useDictionary } from '@/engines/DictionaryContext'
+import { useDictionary } from '@/engines/useDictionary'
 import { validateForm } from '@/engines/formValidation'
 import { validateSestina } from '@/engines/sestina'
 import { BUILT_IN_TEMPLATES } from '@/engines/formTemplates/index'
@@ -10,6 +10,9 @@ import { RefrainTracker } from '@/features/editor/workbench/form/RefrainTracker'
 import { SestinaPlanner } from '@/features/editor/workbench/form/SestinaPlanner'
 import { AcrosticGuide } from '@/features/editor/workbench/form/AcrosticGuide'
 import { CustomFormBuilder } from '@/features/editor/workbench/form/CustomFormBuilder'
+
+import type { FormTemplate } from '@/types/form'
+const EMPTY_FORMS: FormTemplate[] = []
 
 interface FormTabProps {
   body: string
@@ -29,16 +32,15 @@ export function FormTab({
   onInsert,
 }: FormTabProps) {
   const { dict, overrides } = useDictionary()
-  const customForms = useLiveQuery(() => listCustomForms(), []) ?? []
+  const customForms = useLiveQuery(() => listCustomForms(), []) ?? EMPTY_FORMS
   const [strictMode, setStrictMode] = useState(false)
-  const [showBuilder, setShowBuilder] = useState(false)
+  const [builder, setBuilder] = useState({ formId, open: false })
+  if (builder.formId !== formId) setBuilder({ formId, open: false })
+  const showBuilder = builder.formId === formId && builder.open
+  const setShowBuilder = (open: boolean) => setBuilder({ formId, open })
 
   const allTemplates = useMemo(() => [...BUILT_IN_TEMPLATES, ...customForms], [customForms])
   const template = allTemplates.find((t) => t.id === formId) ?? null
-
-  useEffect(() => {
-    setShowBuilder(false)
-  }, [formId])
 
   const items = useMemo(() => {
     if (!template || !dict) return []

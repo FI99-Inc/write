@@ -1,6 +1,9 @@
+import { toDateKey } from '@/engines/stats'
+
 interface ActivityHeatmapProps {
   heatmap: Map<string, number>
   weeks?: number
+  today: Date
 }
 
 function intensityClass(count: number): string {
@@ -11,15 +14,14 @@ function intensityClass(count: number): string {
   return 'bg-indigo'
 }
 
-export function ActivityHeatmap({ heatmap, weeks = 12 }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ heatmap, weeks = 12, today }: ActivityHeatmapProps) {
   const totalDays = weeks * 7
-  const today = new Date()
   const days: { key: string; count: number }[] = []
 
   for (let i = totalDays - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
+    const key = toDateKey(d.getTime())
     days.push({ key, count: heatmap.get(key) ?? 0 })
   }
 

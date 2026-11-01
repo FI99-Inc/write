@@ -20,20 +20,32 @@ export async function createPoem(title = 'Untitled'): Promise<Poem> {
 
 export async function getPoem(id: string): Promise<Poem | null> {
   const poem = await db.poems.get(id)
-  return poem ?? null
+  return poem && !poem.deletedAt ? poem : null
 }
 
 export function listPoems(): Promise<Poem[]> {
-  return db.poems.orderBy('modifiedAt').reverse().toArray()
+  return db.poems
+    .orderBy('modifiedAt')
+    .reverse()
+    .filter((doc) => !doc.deletedAt)
+    .toArray()
 }
 
 export async function updatePoem(
   id: string,
   changes: Partial<Omit<Poem, 'id' | 'createdAt'>>,
 ): Promise<void> {
-  await db.poems.update(id, { ...changes, modifiedAt: Date.now() })
+  const now = Date.now()
+  const writingChanged = ['title', 'body', 'content', 'comments'].some((key) =>
+    Object.hasOwn(changes, key),
+  )
+  await db.poems.update(id, {
+    ...changes,
+    modifiedAt: now,
+    ...(writingChanged && changes.draftSavedAt === undefined ? { draftSavedAt: now } : {}),
+  })
 }
 
 export async function deletePoem(id: string): Promise<void> {
-  await db.poems.delete(id)
+  await db.poems.update(id, { deletedAt: Date.now() })
 }

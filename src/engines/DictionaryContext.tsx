@@ -1,58 +1,49 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { loadDictionary } from '@/data/loadDictionary'
+import { loadWritingTools } from '@/data/loadWritingTools'
 import { loadOverrideIndex } from '@/db/overrides'
-import { buildRhymeIndex, type RhymeIndex } from '@/engines/rhymeIndex'
+import type { RhymeIndex } from '@/engines/rhymeIndex'
 import type { DictionaryIndex } from '@/engines/dictionary'
-import type { OverrideIndex } from '@/types/override'
-
-interface DictionaryContextValue {
-  dict: DictionaryIndex | null
-  rhymeIndex: RhymeIndex | null
-  overrides: OverrideIndex
-  /** True until the bundled CMU dictionary has finished its one-time fetch. */
-  loading: boolean
-}
-
-const DictionaryContext = createContext<DictionaryContextValue>({
-  dict: null,
-  rhymeIndex: null,
-  overrides: new Map(),
-  loading: true,
-})
+import { DictionaryContext, EMPTY_OVERRIDES } from '@/engines/useDictionary'
 
 export function DictionaryProvider({ children }: { children: ReactNode }) {
-  const [dict, setDict] = useState<DictionaryIndex | null>(null)
+  const [resources, setResources] = useState<{
+    dict: DictionaryIndex
+    rhymeIndex: RhymeIndex
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const overrides = useLiveQuery(() => loadOverrideIndex(), [])
-
   useEffect(() => {
     let cancelled = false
-    loadDictionary().then((loaded) => {
-      if (!cancelled) setDict(loaded)
-    })
+    // Index outside render, after the loading surface has had a chance to paint.
+    const timer = setTimeout(() => {
+      setError(null)
+      void loadWritingTools()
+        .then((loaded) => {
+          if (!cancelled) setResources(loaded)
+        })
+        .catch(() => {
+          if (!cancelled)
+            setError('Could not load the writing dictionary. Check your connection and retry.')
+        })
+    }, 0)
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
-  }, [])
-
-  // Built once when the dictionary loads (not per-render): a linear pass
-  // over ~126k entries, cheap once, but not something to redo on every
-  // keystroke.
-  const rhymeIndex = useMemo(() => (dict ? buildRhymeIndex(dict) : null), [dict])
-
-  const value = useMemo<DictionaryContextValue>(
+  }, [attempt])
+  const retry = useCallback(() => setAttempt((value) => value + 1), [])
+  const value = useMemo(
     () => ({
-      dict,
-      rhymeIndex,
-      overrides: overrides ?? new Map(),
-      loading: dict === null,
+      dict: resources?.dict ?? null,
+      rhymeIndex: resources?.rhymeIndex ?? null,
+      overrides: overrides ?? EMPTY_OVERRIDES,
+      loading: !resources && !error,
+      error,
+      retry,
     }),
-    [dict, rhymeIndex, overrides],
+    [resources, overrides, error, retry],
   )
-
   return <DictionaryContext.Provider value={value}>{children}</DictionaryContext.Provider>
-}
-
-export function useDictionary(): DictionaryContextValue {
-  return useContext(DictionaryContext)
 }

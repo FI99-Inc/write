@@ -46,14 +46,18 @@ export function mostUsedWords(poems: Poem[], limit = 20): WordFrequency[] {
     .slice(0, limit)
 }
 
-function toDateKey(timestamp: number): string {
-  return new Date(timestamp).toISOString().slice(0, 10)
+export function toDateKey(timestamp: number): string {
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 /** Every poem's creation and last-modified day, plus every snapshot's day —
  * the closest approximation of "days with writing activity" the data
  * supports (there's no continuous edit log beyond that). */
-export function collectActivityTimestamps(poems: Poem[], snapshots: Snapshot[]): number[] {
+export function collectActivityTimestamps(
+  poems: Poem[],
+  snapshots: Pick<Snapshot, 'createdAt'>[],
+): number[] {
   const timestamps: number[] = []
   for (const poem of poems) {
     timestamps.push(poem.createdAt, poem.modifiedAt)

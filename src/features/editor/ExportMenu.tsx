@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { JSONContent } from '@tiptap/core'
 import { poemToPlainText, poemToMarkdown, slugifyFilename } from '@/features/editor/exportPoem'
 import { docToHtml, docToMarkdown } from '@/engines/richText/serialize'
-import { useRegisterCommands, type Command } from '@/engines/CommandPaletteContext'
+import { useRegisterCommands, type Command } from '@/engines/useCommandPalette'
 
 interface ExportMenuProps {
   title: string
@@ -36,6 +36,25 @@ function downloadTextFile(content: string, filename: string, mimeType: string): 
 export function ExportMenu({ title, body, richContent }: ExportMenuProps) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const exportLock = useRef(false)
+  async function handleDocx() {
+    if (exportLock.current) return
+    exportLock.current = true
+    setExporting(true)
+    setError('')
+    try {
+      const { downloadDocx } = await import('@/engines/interchange/downloadDocx')
+      await downloadDocx(title, body, richContent)
+      setOpen(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not export this document.')
+    } finally {
+      exportLock.current = false
+      setExporting(false)
+    }
+  }
 
   async function handleCopy() {
     await navigator.clipboard.writeText(poemToPlainText(title, body))
@@ -71,6 +90,7 @@ export function ExportMenu({ title, body, richContent }: ExportMenuProps) {
     () => [
       { id: 'export-copy', label: 'Copy to clipboard', run: () => void handleCopy() },
       { id: 'export-txt', label: 'Download as .txt', run: handleDownloadTxt },
+      { id: 'export-docx', label: 'Download as .docx', run: () => void handleDocx() },
       { id: 'export-md', label: 'Download as .md', run: handleDownloadMarkdown },
       ...(richContent
         ? [{ id: 'export-html', label: 'Download as .html', run: handleDownloadHtml }]
@@ -107,7 +127,11 @@ export function ExportMenu({ title, body, richContent }: ExportMenuProps) {
           <div className="absolute right-0 z-20 mt-2 w-48 space-y-1 rounded-lg border border-canvas-line bg-paper p-2 text-sm shadow-lg">
             <button
               type="button"
-              onClick={handleCopy}
+              onClick={() =>
+                void handleCopy().catch(() =>
+                  setError('Could not copy this writing. Try downloading it instead.'),
+                )
+              }
               className="block w-full rounded px-3 py-2 text-left text-ink/70 hover:bg-canvas hover:text-indigo"
             >
               {copied ? 'Copied ✓' : 'Copy to clipboard'}
@@ -126,6 +150,19 @@ export function ExportMenu({ title, body, richContent }: ExportMenuProps) {
             >
               Download .md
             </button>
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={() => void handleDocx()}
+              className="block w-full rounded px-3 py-2 text-left text-ink/70 hover:bg-canvas hover:text-indigo"
+            >
+              {exporting ? 'Preparing Word file…' : 'Download .docx'}
+            </button>
+            {error && (
+              <p role="alert" className="px-3 py-2 text-xs text-berry">
+                {error}
+              </p>
+            )}
             {richContent && (
               <button
                 type="button"

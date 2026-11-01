@@ -13,8 +13,15 @@ let cached: Promise<ThesaurusIndex> | null = null
 export function loadThesaurus(): Promise<ThesaurusIndex> {
   if (!cached) {
     cached = fetch(`${import.meta.env.BASE_URL}data/thesaurus.json`)
-      .then((res) => res.json() as Promise<[string, string[]][]>)
+      .then((res) => {
+        if (res.ok === false) throw new Error(`Resource unavailable (HTTP ${res.status}).`)
+        return res.json() as Promise<[string, string[]][]>
+      })
       .then((tuples) => new Map(tuples))
+      .catch((error: unknown) => {
+        cached = null
+        throw error
+      })
   }
   return cached
 }

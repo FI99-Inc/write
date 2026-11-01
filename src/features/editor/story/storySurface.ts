@@ -7,4 +7,5 @@ export interface StorySurfaceHandle {
   insertText(text: string): void
   /** The plain-text projection, for AI context. */
   getPlainText(): string
+  getTextarea?(): HTMLTextAreaElement | null
 }

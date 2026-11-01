@@ -11,7 +11,7 @@ function parseSyllables(input: string): number[] | undefined {
   const trimmed = input.trim()
   if (!trimmed) return undefined
   const parts = trimmed.split(',').map((p) => Number(p.trim()))
-  return parts.every((n) => Number.isFinite(n) && n > 0) ? parts : undefined
+  return parts.every((n) => Number.isInteger(n) && n > 0) ? parts : undefined
 }
 
 function parseRefrainPairs(input: string): Record<number, number> | undefined {
@@ -19,10 +19,12 @@ function parseRefrainPairs(input: string): Record<number, number> | undefined {
   if (!trimmed) return undefined
   const pairs: Record<number, number> = {}
   for (const chunk of trimmed.split(',')) {
-    const [lineStr, sourceStr] = chunk.split('=').map((s) => s.trim())
-    const line = Number(lineStr)
-    const source = Number(sourceStr)
-    if (Number.isFinite(line) && Number.isFinite(source)) pairs[line] = source
+    const match = chunk.trim().match(/^(\d+)\s*=\s*(\d+)$/)
+    if (!match) return undefined
+    const line = Number(match[1])
+    const source = Number(match[2])
+    if (line <= source || source < 1) return undefined
+    pairs[line] = source
   }
   return Object.keys(pairs).length > 0 ? pairs : undefined
 }
@@ -44,13 +46,30 @@ export function CustomFormBuilder({ onSaved, onCancel }: CustomFormBuilderProps)
       setError('Provide a rhyme scheme, syllable targets, or both.')
       return
     }
-    const template = await saveCustomForm({
-      name: name.trim(),
-      rhymeScheme: rhymeScheme.trim() || undefined,
-      syllablesPerLine,
-      refrainPairs: parseRefrainPairs(refrains),
-    })
-    onSaved(template)
+    if (syllables.trim() && !syllablesPerLine) {
+      setError('Use positive whole numbers for syllable targets.')
+      return
+    }
+    const refrainPairs = parseRefrainPairs(refrains)
+    if (refrains.trim() && !refrainPairs) {
+      setError('Use pairs such as 4=1, referring to an earlier line.')
+      return
+    }
+    if (rhymeScheme.trim() && !/^[a-z\s]+$/i.test(rhymeScheme)) {
+      setError('Use letters for the rhyme scheme.')
+      return
+    }
+    try {
+      const template = await saveCustomForm({
+        name: name.trim(),
+        rhymeScheme: rhymeScheme.trim() || undefined,
+        syllablesPerLine,
+        refrainPairs,
+      })
+      onSaved(template)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not save this form.')
+    }
   }
 
   return (
@@ -112,7 +131,11 @@ export function CustomFormBuilder({ onSaved, onCancel }: CustomFormBuilderProps)
       {error && <p className="text-xs text-berry">{error}</p>}
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="px-2 py-1 text-xs text-ink/50 hover:text-ink">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-2 py-1 text-xs text-ink/50 hover:text-ink"
+        >
           Cancel
         </button>
         <button
